@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use clap::Parser;
 use problem_1::Problem1;
 

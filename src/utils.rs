@@ -48,9 +48,9 @@ pub fn surface_plot(x: Vec<f64>, y: Vec<f64>, z: Vec<Vec<f64>>) {
     Command::new("python3")
         .args([
             "plot/surface_plot.py",
-            format!("-x={:?}", x).as_str(),
-            format!("-y={:?}", y).as_str(),
-            format!("-z={:?}", z).as_str(),
+            format!("-x={x:?}").as_str(),
+            format!("-y={y:?}").as_str(),
+            format!("-z={z:?}").as_str(),
         ])
         .output()
         .unwrap();
