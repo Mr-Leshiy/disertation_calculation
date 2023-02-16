@@ -31,7 +31,9 @@ pub fn function_calculation<F: Fn(f64, f64) -> f64>(
             res[j as usize][i as usize] = f(x, y);
             print!(
                 "\r Calculating {}%...",
-                (i + 1) as f64 * (j + 1) as f64 / (n_x as f64 * n_y as f64) * 100_f64
+                f64::trunc(
+                    (i + 1) as f64 * (j + 1) as f64 / (n_x as f64 * n_y as f64) * 100_f64 * 100_f64
+                ) / 100_f64
             );
         }
     }
