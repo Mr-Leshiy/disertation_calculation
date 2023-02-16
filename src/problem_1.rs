@@ -1,6 +1,6 @@
 use crate::{
     integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0},
+    utils::{function_calculation, g, lambda, mu_0, surface_plot},
 };
 use clap::{Parser, ValueEnum};
 use std::f64::consts::PI;
@@ -45,7 +45,7 @@ impl Problem1 {
         let g = g(self.puasson_coef, self.young_modulus);
         let lambda = lambda(self.puasson_coef, self.young_modulus);
 
-        let _res = match (self.problem_type, self.function_type) {
+        let (x, y, z) = match (self.problem_type, self.function_type) {
             (ProblemType::Type1, FunctionType::U) => {
                 function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
                     type1::function_u(
@@ -164,9 +164,7 @@ impl Problem1 {
             }
         };
 
-        for raw in _res {
-            println!("{:?}", raw);
-        }
+        surface_plot(x, y, z);
     }
 }
 
