@@ -1,5 +1,9 @@
 # Build
-
+Install python matplotlib depency (used for ploting)
+```
+pip3 install matplotlib
+```
+Build
 ```
 cargo b --release
 ```
