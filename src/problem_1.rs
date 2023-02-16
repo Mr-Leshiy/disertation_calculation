@@ -163,6 +163,10 @@ impl Problem1 {
                 })
             }
         };
+
+        for raw in _res {
+            println!("{:?}", raw);
+        }
     }
 }
 
@@ -520,7 +524,7 @@ pub mod type1 {
         let d_ux = function_derivative_u_x(a, b, x, y, mu_0, g, lambda, load_function, eps);
         let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-        2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
+        2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
     }
 
     pub fn function_sigma_y<F: Fn(f64) -> f64>(
@@ -847,7 +851,7 @@ pub mod type2 {
         let d_ux = function_derivative_u_x(a, b, x, y, mu_0, load_function, eps);
         let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-        2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
+        2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
     }
 
     pub fn function_sigma_y<F: Fn(f64) -> f64>(
