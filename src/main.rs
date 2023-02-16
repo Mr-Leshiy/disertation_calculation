@@ -8,7 +8,6 @@ pub mod utils;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, rename_all = "snake-case")]
 pub enum Cli {
-    #[clap(subcommand)]
     Problem1(Problem1),
 }
 
