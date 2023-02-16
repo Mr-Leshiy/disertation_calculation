@@ -7,7 +7,7 @@ use std::f64::consts::PI;
 use type1::Type1;
 
 #[derive(Parser)]
-#[clap(rename_all = "kebab-case")]
+#[clap(rename_all = "snake-case")]
 pub enum Problem1 {
     Type1(Type1),
 }
@@ -21,14 +21,14 @@ impl Problem1 {
 }
 
 #[derive(Parser, Clone, ValueEnum)]
-#[clap(rename_all = "kebab-case")]
+#[clap(rename_all = "snake-case")]
 enum FunctionType {
     U,
     V,
 }
 
 #[derive(Parser, Clone, ValueEnum)]
-#[clap(rename_all = "kebab-case")]
+#[clap(rename_all = "snake-case")]
 enum LoadFunction {
     // function: x * x
     Type1,
@@ -39,7 +39,7 @@ enum LoadFunction {
 impl LoadFunction {
     fn call(&self, x: f64) -> f64 {
         match self {
-            Self::Type1 => x * x,
+            Self::Type1 => (x - 2.5) * (x - 2.5),
             Self::Type2 => x * x * x,
         }
     }
@@ -49,12 +49,16 @@ pub mod type1 {
     use super::*;
 
     #[derive(Parser)]
-    #[clap(rename_all = "kebab-case")]
+    #[clap(rename_all = "snake-case")]
     pub struct Type1 {
         #[clap(long)]
         a: f64,
         #[clap(long)]
         b: f64,
+        #[clap(long)]
+        n_x: u32,
+        #[clap(long)]
+        n_y: u32,
         #[clap(long)]
         puasson_coef: f64,
         #[clap(long)]
@@ -75,30 +79,49 @@ pub mod type1 {
             let g = g(self.puasson_coef, self.young_modulus);
             let lambda = lambda(self.puasson_coef, self.young_modulus);
 
-            match self.function_type {
-                FunctionType::U => function_u(
-                    self.a,
-                    self.b,
-                    0_f64,
-                    0_f64,
-                    mu_0,
-                    g,
-                    lambda,
-                    &|x| self.load_function.call(x),
-                    self.eps,
-                ),
-                FunctionType::V => function_v(
-                    self.a,
-                    self.b,
-                    0_f64,
-                    0_f64,
-                    mu_0,
-                    g,
-                    lambda,
-                    &|x| self.load_function.call(x),
-                    self.eps,
-                ),
-            };
+            let h_x = self.a / self.n_x as f64;
+            let h_y = self.b / self.n_y as f64;
+
+            let mut res = vec![vec![0_f64; self.n_x as usize]; self.n_y as usize];
+
+            for j in 0..self.n_y {
+                for i in 0..self.n_x {
+                    let x = i as f64 * h_x;
+                    let y = j as f64 * h_y;
+
+                    res[j as usize][i as usize] = match self.function_type {
+                        FunctionType::U => function_u(
+                            self.a,
+                            self.b,
+                            x,
+                            y,
+                            mu_0,
+                            g,
+                            lambda,
+                            &|x| self.load_function.call(x),
+                            self.eps,
+                        ),
+                        FunctionType::V => function_v(
+                            self.a,
+                            self.b,
+                            x,
+                            y,
+                            mu_0,
+                            g,
+                            lambda,
+                            &|x| self.load_function.call(x),
+                            self.eps,
+                        ),
+                    };
+                    print!(
+                        "\r Calculating {}%...",
+                        (i + 1) as f64 * (j + 1) as f64 / (self.n_x as f64 * self.n_y as f64)
+                            * 100_f64
+                    );
+                }
+            }
+
+            println!("res: {:?}", res);
         }
     }
 
