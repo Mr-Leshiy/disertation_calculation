@@ -1,6 +1,106 @@
+use crate::{
+    integration::definite_integral,
+    utils::{g, lambda, mu_0},
+};
+use clap::{Parser, ValueEnum};
+use std::f64::consts::PI;
+use type1::Type1;
+
+#[derive(Parser)]
+#[clap(rename_all = "kebab-case")]
+pub enum Problem1 {
+    Type1(Type1),
+}
+
+impl Problem1 {
+    pub fn exec(self) {
+        match self {
+            Self::Type1(type1) => type1.exec(),
+        }
+    }
+}
+
+#[derive(Parser, Clone, ValueEnum)]
+#[clap(rename_all = "kebab-case")]
+enum FunctionType {
+    U,
+    V,
+}
+
+#[derive(Parser, Clone, ValueEnum)]
+#[clap(rename_all = "kebab-case")]
+enum LoadFunction {
+    // function: x * x
+    Type1,
+    // function: x * x * x
+    Type2,
+}
+
+impl LoadFunction {
+    fn call(&self, x: f64) -> f64 {
+        match self {
+            Self::Type1 => x * x,
+            Self::Type2 => x * x * x,
+        }
+    }
+}
+
 pub mod type1 {
-    use crate::integration::definite_integral;
-    use std::f64::consts::PI;
+    use super::*;
+
+    #[derive(Parser)]
+    #[clap(rename_all = "kebab-case")]
+    pub struct Type1 {
+        #[clap(long)]
+        a: f64,
+        #[clap(long)]
+        b: f64,
+        #[clap(long)]
+        puasson_coef: f64,
+        #[clap(long)]
+        young_modulus: f64,
+        #[clap(long)]
+        eps: f64,
+        #[clap(long)]
+        function_type: FunctionType,
+        #[clap(long)]
+        load_function: LoadFunction,
+    }
+
+    impl Type1 {
+        pub fn exec(self) {
+            assert!(self.a < self.b);
+
+            let mu_0 = mu_0(self.puasson_coef);
+            let g = g(self.puasson_coef, self.young_modulus);
+            let lambda = lambda(self.puasson_coef, self.young_modulus);
+
+            match self.function_type {
+                FunctionType::U => function_u(
+                    self.a,
+                    self.b,
+                    0_f64,
+                    0_f64,
+                    mu_0,
+                    g,
+                    lambda,
+                    &|x| self.load_function.call(x),
+                    self.eps,
+                ),
+                FunctionType::V => function_v(
+                    self.a,
+                    self.b,
+                    0_f64,
+                    0_f64,
+                    mu_0,
+                    g,
+                    lambda,
+                    &|x| self.load_function.call(x),
+                    self.eps,
+                ),
+            };
+        }
+    }
 
     // returns c1, c2, c3, c4 coefficients
     fn coefficients<F: Fn(f64) -> f64>(
@@ -171,15 +271,13 @@ pub mod type1 {
             prev_result = result;
             result = -p0 * y / a / (2_f64 * g + lambda);
 
-            if x != a && x != 0_f64 {
-                for i in 1..n {
-                    let alpha = PI * i as f64 / a;
-                    result += 2_f64
-                        * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                        * f64::cos(alpha * x)
-                        / a
-                        / (1_f64 + mu_0);
-                }
+            for i in 1..n {
+                let alpha = PI * i as f64 / a;
+                result += 2_f64
+                    * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                    * f64::cos(alpha * x)
+                    / a
+                    / (1_f64 + mu_0);
             }
 
             if f64::abs(result - prev_result) < eps {
