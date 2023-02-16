@@ -1,7 +1,8 @@
 # Build
-Install python matplotlib depency (used for ploting)
+Install python dependencies
 ```
 pip3 install matplotlib
+pip3 install argparse
 ```
 Build
 ```
