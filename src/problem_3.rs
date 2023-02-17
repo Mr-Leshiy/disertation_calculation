@@ -1,6 +1,96 @@
 use std::f64::consts::PI;
 
-use crate::integration::definite_integral;
+use clap::Parser;
+
+use crate::{
+    integration::definite_integral,
+    utils::{function_calculation, g, lambda, mu_0, surface_plot},
+    FunctionType, LoadFunction,
+};
+
+#[derive(Parser)]
+#[clap(rename_all = "snake-case")]
+pub struct Problem3 {
+    #[clap(long)]
+    a: f64,
+    #[clap(long)]
+    b: f64,
+    #[clap(long)]
+    n_x: u32,
+    #[clap(long)]
+    n_y: u32,
+    #[clap(long)]
+    omega: f64,
+    #[clap(long)]
+    c1: f64,
+    #[clap(long)]
+    c2: f64,
+    #[clap(long)]
+    puasson_coef: f64,
+    #[clap(long)]
+    young_modulus: f64,
+    #[clap(long)]
+    eps: f64,
+    #[clap(long)]
+    function_type: FunctionType,
+    #[clap(long)]
+    load_function: LoadFunction,
+}
+
+impl Problem3 {
+    pub fn exec(self) {
+        assert!(self.a < self.b);
+
+        let mu_0 = mu_0(self.puasson_coef);
+        let g = g(self.puasson_coef, self.young_modulus);
+        let lambda = lambda(self.puasson_coef, self.young_modulus);
+
+        let (x, y, z) = match self.function_type {
+            FunctionType::U => {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
+                    function_u(
+                        self.a,
+                        self.b,
+                        x,
+                        y,
+                        0_f64,
+                        self.omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
+            }
+            FunctionType::V => {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
+                    function_v(
+                        self.a,
+                        self.b,
+                        x,
+                        y,
+                        0_f64,
+                        self.omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
+            }
+            FunctionType::SigmaX => todo!(),
+            FunctionType::SigmaY => todo!(),
+        };
+
+        surface_plot(&x, &y, &z[0]);
+    }
+}
 
 fn a_coefficients(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (f64, f64) {
     let x1 = 2_f64 * alpha * alpha * c1 * c1 * c2 * c2 * mu_0
@@ -172,11 +262,12 @@ fn function_vn<F: Fn(f64) -> f64>(
     res
 }
 
-pub fn function_u<F: Fn(f64) -> f64>(
+fn function_u<F: Fn(f64) -> f64>(
     a: f64,
     b: f64,
     x: f64,
     y: f64,
+    t: f64,
     omega: f64,
     c1: f64,
     c2: f64,
@@ -189,6 +280,9 @@ pub fn function_u<F: Fn(f64) -> f64>(
     let mut n = 10;
     let mut result = 0_f64;
     let mut prev_result;
+
+    // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
+    let cos_t = f64::cos(omega * t);
 
     if x != a && x != 0_f64 {
         for i in 1..n {
@@ -209,6 +303,7 @@ pub fn function_u<F: Fn(f64) -> f64>(
                     eps,
                 )
                 * f64::sin(alpha * x)
+                * cos_t
                 / a
                 / (1_f64 + mu_0);
         }
@@ -238,9 +333,96 @@ pub fn function_u<F: Fn(f64) -> f64>(
                         eps,
                     )
                     * f64::sin(alpha * x)
+                    * cos_t
                     / a
                     / (1_f64 + mu_0);
             }
+        }
+
+        if f64::abs(result - prev_result) < eps {
+            break;
+        }
+    }
+
+    result
+}
+
+fn function_v<F: Fn(f64) -> f64>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    t: f64,
+    omega: f64,
+    c1: f64,
+    c2: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let mut n = 10;
+    let p0 = definite_integral(0_f64, a, 100, eps, load_function);
+    let v0 = -p0 * f64::sin(y * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0))))
+        / ((2_f64 * g + lambda)
+            * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))
+            * f64::sin(b * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))));
+    let mut result = v0 / a;
+    let mut prev_result;
+
+    // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
+    let cos_t = f64::cos(omega * t);
+
+    for i in 1..n {
+        let alpha = PI * i as f64 / a;
+        result += 2_f64
+            * function_vn(
+                y,
+                a,
+                b,
+                omega,
+                c1,
+                c2,
+                alpha,
+                mu_0,
+                g,
+                lambda,
+                load_function,
+                eps,
+            )
+            * f64::cos(alpha * x)
+            * cos_t
+            / a
+            / (1_f64 + mu_0);
+    }
+
+    loop {
+        n *= 2;
+        prev_result = result;
+        result = v0 / a;
+
+        for i in 1..n {
+            let alpha = PI * i as f64 / a;
+            result += 2_f64
+                * function_vn(
+                    y,
+                    a,
+                    b,
+                    omega,
+                    c1,
+                    c2,
+                    alpha,
+                    mu_0,
+                    g,
+                    lambda,
+                    load_function,
+                    eps,
+                )
+                * f64::cos(alpha * x)
+                * cos_t
+                / a
+                / (1_f64 + mu_0);
         }
 
         if f64::abs(result - prev_result) < eps {

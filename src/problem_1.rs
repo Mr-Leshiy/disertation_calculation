@@ -1,6 +1,7 @@
 use crate::{
     integration::definite_integral,
     utils::{function_calculation, g, lambda, mu_0, surface_plot},
+    FunctionType, LoadFunction,
 };
 use clap::{Parser, ValueEnum};
 use std::f64::consts::PI;
@@ -47,7 +48,7 @@ impl Problem1 {
 
         let (x, y, z) = match (self.problem_type, self.function_type) {
             (ProblemType::Type1, FunctionType::U) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type1::function_u(
                         self.a,
                         self.b,
@@ -62,7 +63,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type1, FunctionType::V) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type1::function_v(
                         self.a,
                         self.b,
@@ -77,7 +78,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type1, FunctionType::SigmaX) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type1::function_sigma_x(
                         self.a,
                         self.b,
@@ -92,7 +93,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type1, FunctionType::SigmaY) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type1::function_sigma_y(
                         self.a,
                         self.b,
@@ -107,7 +108,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type2, FunctionType::U) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type2::function_u(
                         self.a,
                         self.b,
@@ -120,7 +121,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type2, FunctionType::V) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type2::function_v(
                         self.a,
                         self.b,
@@ -133,7 +134,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type2, FunctionType::SigmaX) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type2::function_sigma_x(
                         self.a,
                         self.b,
@@ -148,7 +149,7 @@ impl Problem1 {
                 })
             }
             (ProblemType::Type2, FunctionType::SigmaY) => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, |x, y| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
                     type2::function_sigma_y(
                         self.a,
                         self.b,
@@ -164,34 +165,7 @@ impl Problem1 {
             }
         };
 
-        surface_plot(x, y, z);
-    }
-}
-
-#[derive(Parser, Clone, ValueEnum)]
-#[clap(rename_all = "snake-case")]
-enum FunctionType {
-    U,
-    V,
-    SigmaX,
-    SigmaY,
-}
-
-#[derive(Parser, Clone, ValueEnum)]
-#[clap(rename_all = "snake-case")]
-enum LoadFunction {
-    // function: (x - 2.5) * (x - 2.5)
-    Type1,
-    // function: (x - 2.5) * (x - 2.5) * (x - 2.5)
-    Type2,
-}
-
-impl LoadFunction {
-    fn call(&self, x: f64) -> f64 {
-        match self {
-            Self::Type1 => (x - 2.5) * (x - 2.5),
-            Self::Type2 => (x - 2.5) * (x - 2.5) * (x - 2.5),
-        }
+        surface_plot(&x, &y, &z[0]);
     }
 }
 
@@ -755,7 +729,8 @@ pub mod type2 {
     ) -> f64 {
         let mut n = 10;
         let p0 = definite_integral(0_f64, a, 100, eps, load_function);
-        let mut result = -p0 * y / a / b;
+        let v0 = -p0 * y / a / b;
+        let mut result = v0 / a;
         let mut prev_result;
 
         for i in 1..n {
@@ -769,7 +744,7 @@ pub mod type2 {
         loop {
             n *= 2;
             prev_result = result;
-            result = -p0 * y / a / b;
+            result = v0 / a;
 
             for i in 1..n {
                 let alpha = PI * i as f64 / a;
@@ -794,14 +769,13 @@ pub mod type2 {
         x: f64,
         y: f64,
         mu_0: f64,
-        g: f64,
-        lambda: f64,
         load_function: &F,
         eps: f64,
     ) -> f64 {
         let mut n = 10;
         let p0 = definite_integral(0_f64, a, 100, eps, load_function);
-        let mut result = -p0 * y / a / (2_f64 * g + lambda);
+        let v0 = -p0 * y / a / b;
+        let mut result = v0 / a;
         let mut prev_result;
 
         for i in 1..n {
@@ -816,7 +790,7 @@ pub mod type2 {
         loop {
             n *= 2;
             prev_result = result;
-            result = -p0 * y / a / (2_f64 * g + lambda);
+            result = v0 / a;
 
             for i in 1..n {
                 let alpha = PI * i as f64 / a;
@@ -847,7 +821,7 @@ pub mod type2 {
         eps: f64,
     ) -> f64 {
         let d_ux = function_derivative_u_x(a, b, x, y, mu_0, load_function, eps);
-        let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
+        let d_vy = function_derivative_v_y(a, b, x, y, mu_0, load_function, eps);
 
         2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
     }
@@ -864,7 +838,7 @@ pub mod type2 {
         eps: f64,
     ) -> f64 {
         let d_ux = function_derivative_u_x(a, b, x, y, mu_0, load_function, eps);
-        let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
+        let d_vy = function_derivative_v_y(a, b, x, y, mu_0, load_function, eps);
 
         2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
     }
