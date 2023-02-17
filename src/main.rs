@@ -5,6 +5,7 @@ use problem_1::Problem1;
 
 pub mod integration;
 pub mod problem_1;
+pub mod problem_3;
 pub mod utils;
 
 #[derive(Parser)]
