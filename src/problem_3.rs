@@ -98,8 +98,54 @@ impl Problem3 {
                     )
                 },
             ),
-            FunctionType::SigmaX => todo!(),
-            FunctionType::SigmaY => todo!(),
+            FunctionType::SigmaX => function_calculation(
+                self.a,
+                self.b,
+                self.n_x,
+                self.n_y,
+                Some((self.t, self.n_t)),
+                |x, y, t| {
+                    function_sigma_x(
+                        self.a,
+                        self.b,
+                        x,
+                        y,
+                        t,
+                        self.omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                },
+            ),
+            FunctionType::SigmaY => function_calculation(
+                self.a,
+                self.b,
+                self.n_x,
+                self.n_y,
+                Some((self.t, self.n_t)),
+                |x, y, t| {
+                    function_sigma_y(
+                        self.a,
+                        self.b,
+                        x,
+                        y,
+                        t,
+                        self.omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                },
+            ),
         };
 
         surface_dynamic_plot(&x, &y, &z);
@@ -280,6 +326,59 @@ fn function_vn<F: Fn(f64) -> f64>(
     res
 }
 
+fn function_derivative_vn<F: Fn(f64) -> f64>(
+    y: f64,
+    a: f64,
+    b: f64,
+    omega: f64,
+    c1: f64,
+    c2: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+
+    let e1 = f64::exp(a1 * y);
+    let e2 = f64::exp(-a1 * y);
+    let e3 = f64::exp(a3 * y);
+    let e4 = f64::exp(-a3 * y);
+
+    let (c_1, c_2, c_3, c_4) = c_coefficients(
+        a,
+        b,
+        a1,
+        a3,
+        omega,
+        c1,
+        c2,
+        alpha,
+        mu_0,
+        g,
+        lambda,
+        load_function,
+        eps,
+    );
+
+    let res = c_1 * (-a1 * alpha * mu_0) * a1 * (e1 - e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+        + c_2
+            * (a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+            * a1
+            * (e1 + e2)
+            / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+        + c_3 * (-a3 * alpha * mu_0) * a3 * (e3 - e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1))
+        + c_4
+            * (a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+            * a3
+            * (e3 + e4)
+            / (2_f64 * a3 * (a3 * a3 - a1 * a1));
+
+    res
+}
+
 fn function_u<F: Fn(f64) -> f64>(
     a: f64,
     b: f64,
@@ -351,6 +450,93 @@ fn function_u<F: Fn(f64) -> f64>(
                         eps,
                     )
                     * f64::sin(alpha * x)
+                    * cos_t
+                    / a
+                    / (1_f64 + mu_0);
+            }
+        }
+
+        if f64::abs(result - prev_result) < eps {
+            break;
+        }
+    }
+
+    result
+}
+
+fn function_derivative_u_x<F: Fn(f64) -> f64>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    t: f64,
+    omega: f64,
+    c1: f64,
+    c2: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let mut n = 10;
+    let mut result = 0_f64;
+    let mut prev_result;
+
+    // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
+    let cos_t = f64::cos(omega * t);
+
+    if x != a && x != 0_f64 {
+        for i in 1..n {
+            let alpha = PI * i as f64 / a;
+            result += 2_f64
+                * alpha
+                * function_un(
+                    y,
+                    a,
+                    b,
+                    omega,
+                    c1,
+                    c2,
+                    alpha,
+                    mu_0,
+                    g,
+                    lambda,
+                    load_function,
+                    eps,
+                )
+                * f64::cos(alpha * x)
+                * cos_t
+                / a
+                / (1_f64 + mu_0);
+        }
+    }
+
+    loop {
+        n *= 2;
+        prev_result = result;
+        result = 0_f64;
+
+        if x != a && x != 0_f64 {
+            for i in 1..n {
+                let alpha = PI * i as f64 / a;
+                result += 2_f64
+                    * alpha
+                    * function_un(
+                        y,
+                        a,
+                        b,
+                        omega,
+                        c1,
+                        c2,
+                        alpha,
+                        mu_0,
+                        g,
+                        lambda,
+                        load_function,
+                        eps,
+                    )
+                    * f64::cos(alpha * x)
                     * cos_t
                     / a
                     / (1_f64 + mu_0);
@@ -449,4 +635,188 @@ fn function_v<F: Fn(f64) -> f64>(
     }
 
     result
+}
+
+fn function_derivative_v_y<F: Fn(f64) -> f64>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    t: f64,
+    omega: f64,
+    c1: f64,
+    c2: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let mut n = 10;
+    let p0 = definite_integral(0_f64, a, 100, eps, load_function);
+    let v0 = -p0 * f64::sin(y * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0))))
+        / ((2_f64 * g + lambda)
+            * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))
+            * f64::sin(b * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))));
+    let mut result = v0 / a;
+    let mut prev_result;
+
+    // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
+    let cos_t = f64::cos(omega * t);
+
+    for i in 1..n {
+        let alpha = PI * i as f64 / a;
+        result += 2_f64
+            * function_derivative_vn(
+                y,
+                a,
+                b,
+                omega,
+                c1,
+                c2,
+                alpha,
+                mu_0,
+                g,
+                lambda,
+                load_function,
+                eps,
+            )
+            * f64::cos(alpha * x)
+            * cos_t
+            / a
+            / (1_f64 + mu_0);
+    }
+
+    loop {
+        n *= 2;
+        prev_result = result;
+        result = v0 / a;
+
+        for i in 1..n {
+            let alpha = PI * i as f64 / a;
+            result += 2_f64
+                * function_derivative_vn(
+                    y,
+                    a,
+                    b,
+                    omega,
+                    c1,
+                    c2,
+                    alpha,
+                    mu_0,
+                    g,
+                    lambda,
+                    load_function,
+                    eps,
+                )
+                * f64::cos(alpha * x)
+                * cos_t
+                / a
+                / (1_f64 + mu_0);
+        }
+
+        if f64::abs(result - prev_result) < eps {
+            break;
+        }
+    }
+
+    result
+}
+
+fn function_sigma_x<F: Fn(f64) -> f64>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    t: f64,
+    omega: f64,
+    c1: f64,
+    c2: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let d_ux = function_derivative_u_x(
+        a,
+        b,
+        x,
+        y,
+        t,
+        omega,
+        c1,
+        c2,
+        mu_0,
+        g,
+        lambda,
+        load_function,
+        eps,
+    );
+    let d_vy = function_derivative_v_y(
+        a,
+        b,
+        x,
+        y,
+        t,
+        omega,
+        c1,
+        c2,
+        mu_0,
+        g,
+        lambda,
+        load_function,
+        eps,
+    );
+
+    2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
+}
+
+fn function_sigma_y<F: Fn(f64) -> f64>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    t: f64,
+    omega: f64,
+    c1: f64,
+    c2: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let d_ux = function_derivative_u_x(
+        a,
+        b,
+        x,
+        y,
+        t,
+        omega,
+        c1,
+        c2,
+        mu_0,
+        g,
+        lambda,
+        load_function,
+        eps,
+    );
+    let d_vy = function_derivative_v_y(
+        a,
+        b,
+        x,
+        y,
+        t,
+        omega,
+        c1,
+        c2,
+        mu_0,
+        g,
+        lambda,
+        load_function,
+        eps,
+    );
+
+    2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
 }

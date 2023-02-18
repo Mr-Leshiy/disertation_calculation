@@ -51,8 +51,7 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64>(
 pub fn surface_static_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
     let path = current_dir().unwrap().join("result_tmp");
     let mut file = File::create(&path).unwrap();
-    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}"))
-        .unwrap();
+    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}")).unwrap();
 
     let _res = Command::new("python3")
         .args([
@@ -71,8 +70,7 @@ pub fn surface_static_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
 pub fn surface_dynamic_plot(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>]) {
     let path = current_dir().unwrap().join("result_tmp");
     let mut file = File::create(&path).unwrap();
-    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}"))
-        .unwrap();
+    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}")).unwrap();
 
     let _res = Command::new("python3")
         .args([
