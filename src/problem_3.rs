@@ -201,7 +201,7 @@ fn function_un<F: Fn(f64) -> f64>(
     let e3 = f64::exp(a3 * y);
     let e4 = f64::exp(-a3 * y);
 
-    let (c1, c2, c3, c4) = c_coefficients(
+    let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
         b,
         a1,
@@ -217,12 +217,14 @@ fn function_un<F: Fn(f64) -> f64>(
         eps,
     );
 
-    let res = c1 * (a1 * a1 + a1 * a1 * mu_0 - alpha * alpha + omega * omega / c2 / c2) * (e1 - e2)
+    let res = c_1
+        * (a1 * a1 + a1 * a1 * mu_0 - alpha * alpha + omega * omega / c2 / c2)
+        * (e1 - e2)
         / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c2 * a1 * alpha * mu_0 * (e1 + e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c3 * (a3 * a3 + a3 * a3 * mu_0 - alpha * alpha + omega * omega / c2 / c2) * (e3 - e4)
+        + c_2 * a1 * alpha * mu_0 * (e1 + e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+        + c_3 * (a3 * a3 + a3 * a3 * mu_0 - alpha * alpha + omega * omega / c2 / c2) * (e3 - e4)
             / (2_f64 * a3 * (a3 * a3 - a1 * a1))
-        + c4 * a3 * alpha * mu_0 * (e3 + e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1));
+        + c_4 * a3 * alpha * mu_0 * (e3 + e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1));
 
     res
 }
@@ -248,7 +250,7 @@ fn function_vn<F: Fn(f64) -> f64>(
     let e3 = f64::exp(a3 * y);
     let e4 = f64::exp(-a3 * y);
 
-    let (c1, c2, c3, c4) = c_coefficients(
+    let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
         b,
         a1,
@@ -264,12 +266,14 @@ fn function_vn<F: Fn(f64) -> f64>(
         eps,
     );
 
-    let res = c1 * (-a1 * alpha * mu_0) * (e1 + e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c2 * (a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+    let res = c_1 * (-a1 * alpha * mu_0) * (e1 + e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+        + c_2
+            * (a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
             * (e1 - e2)
             / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c3 * (-a3 * alpha * mu_0) * (e3 + e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1))
-        + c4 * (a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+        + c_3 * (-a3 * alpha * mu_0) * (e3 + e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1))
+        + c_4
+            * (a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
             * (e3 - e4)
             / (2_f64 * a3 * (a3 * a3 - a1 * a1));
 
