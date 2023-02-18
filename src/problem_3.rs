@@ -16,9 +16,13 @@ pub struct Problem3 {
     #[clap(long)]
     b: f64,
     #[clap(long)]
+    t: f64,
+    #[clap(long)]
     n_x: u32,
     #[clap(long)]
     n_y: u32,
+    #[clap(long)]
+    n_t: u32,
     #[clap(long)]
     omega: f64,
     #[clap(long)]
@@ -46,8 +50,13 @@ impl Problem3 {
         let lambda = lambda(self.puasson_coef, self.young_modulus);
 
         let (x, y, z) = match self.function_type {
-            FunctionType::U => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, t| {
+            FunctionType::U => function_calculation(
+                self.a,
+                self.b,
+                self.n_x,
+                self.n_y,
+                Some((self.t, self.n_t)),
+                |x, y, t| {
                     function_u(
                         self.a,
                         self.b,
@@ -63,10 +72,15 @@ impl Problem3 {
                         &|x| self.load_function.call(x),
                         self.eps,
                     )
-                })
-            }
-            FunctionType::V => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, t| {
+                },
+            ),
+            FunctionType::V => function_calculation(
+                self.a,
+                self.b,
+                self.n_x,
+                self.n_y,
+                Some((self.t, self.n_t)),
+                |x, y, t| {
                     function_v(
                         self.a,
                         self.b,
@@ -82,8 +96,8 @@ impl Problem3 {
                         &|x| self.load_function.call(x),
                         self.eps,
                     )
-                })
-            }
+                },
+            ),
             FunctionType::SigmaX => todo!(),
             FunctionType::SigmaY => todo!(),
         };

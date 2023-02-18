@@ -32,6 +32,7 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64>(
     let mut t = vec![0_f64; n_t as usize];
     let mut z = vec![vec![vec![0_f64; n_x as usize]; n_y as usize]; n_t as usize];
 
+    println!("Calculating ...");
     for k in 0..n_t {
         t[k as usize] = k as f64 * h_t;
         for j in 0..n_y {
@@ -41,15 +42,6 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64>(
 
                 z[k as usize][j as usize][i as usize] =
                     f(x[i as usize], y[j as usize], t[k as usize]);
-                print!(
-                    "\r Calculating {}%...",
-                    f64::trunc(
-                        (i + 1) as f64 * (j + 1) as f64 * (k + 1) as f64
-                            / (n_x as f64 * n_y as f64 * n_t as f64)
-                            * 100_f64
-                            * 100_f64
-                    ) / 100_f64
-                );
             }
         }
     }
