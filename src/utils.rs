@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{env::current_dir, fs::File, io::Write, process::Command};
 
 // calculate Lamme's coefficient G value
 pub fn g(puasson_coef: f64, young_modulus: f64) -> f64 {
@@ -49,37 +49,43 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64>(
 }
 
 pub fn surface_static_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
+    let path = current_dir().unwrap().join("result_tmp");
+    let mut file = File::create(&path).unwrap();
+    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}"))
+        .unwrap();
+
     let _res = Command::new("python3")
         .args([
             "plot/surface_static_plot.py",
-            format!("-x={x:?}").as_str(),
-            format!("-y={y:?}").as_str(),
-            format!("-z={z:?}").as_str(),
+            format!("-p={}", path.to_str().unwrap()).as_str(),
         ])
         .output()
         .unwrap();
-    // println!(
-    //     "stout: {}, stderr: {}",
-    //     String::from_utf8(_res.stdout).unwrap(),
-    //     String::from_utf8(_res.stderr).unwrap()
-    // );
+    println!(
+        "stout: {}, stderr: {}",
+        String::from_utf8(_res.stdout).unwrap(),
+        String::from_utf8(_res.stderr).unwrap()
+    );
 }
 
 pub fn surface_dynamic_plot(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>]) {
+    let path = current_dir().unwrap().join("result_tmp");
+    let mut file = File::create(&path).unwrap();
+    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}"))
+        .unwrap();
+
     let _res = Command::new("python3")
         .args([
             "plot/surface_dynamic_plot.py",
-            format!("-x={x:?}").as_str(),
-            format!("-y={y:?}").as_str(),
-            format!("-z={z:?}").as_str(),
+            format!("-p={}", path.to_str().unwrap()).as_str(),
         ])
         .output()
         .unwrap();
-    // println!(
-    //     "stout: {}, stderr: {}",
-    //     String::from_utf8(_res.stdout).unwrap(),
-    //     String::from_utf8(_res.stderr).unwrap()
-    // );
+    println!(
+        "stout: {}, stderr: {}",
+        String::from_utf8(_res.stdout).unwrap(),
+        String::from_utf8(_res.stderr).unwrap()
+    );
 }
 
 #[test]

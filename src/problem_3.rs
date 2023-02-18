@@ -4,7 +4,7 @@ use clap::Parser;
 
 use crate::{
     integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0, surface_static_plot},
+    utils::{function_calculation, g, lambda, mu_0, surface_dynamic_plot},
     FunctionType, LoadFunction,
 };
 
@@ -102,7 +102,7 @@ impl Problem3 {
             FunctionType::SigmaY => todo!(),
         };
 
-        surface_static_plot(&x, &y, &z[0]);
+        surface_dynamic_plot(&x, &y, &z);
     }
 }
 

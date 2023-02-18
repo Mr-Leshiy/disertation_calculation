@@ -6,15 +6,17 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser(description='Surface plot.')
-parser.add_argument("-x", "--list_x", type=str, required=True)
-parser.add_argument("-y", "--list_y", type=str, required=True)
-parser.add_argument("-z", "--list_z", type=str, required=True)
+parser.add_argument("-p", "--path", type=str, required=True)
 
-args = parser.parse_args()
+file = open(parser.parse_args().path)
+data = file.read().split("|")
 
-x = ast.literal_eval(args.list_x)
-y = ast.literal_eval(args.list_y)
-z = ast.literal_eval(args.list_z)
+x = ast.literal_eval(data[0])
+y = ast.literal_eval(data[1])
+z = ast.literal_eval(data[2])
+
+z_min = min(min(values) for values in [min(values) for values in z])
+z_max = max(max(values) for values in [max(values) for values in z])
 
 X, Y = np.meshgrid(x, y)
 
@@ -34,6 +36,6 @@ ani =  animation.FuncAnimation(fig1, update_plot, len(z), fargs=(Z, plot), inter
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
 ax.set_zlabel("function")
-# ax.set_zlim([-13.5, -14.7])
+ax.set_zlim([z_min, z_max])
 
 plt.show()
