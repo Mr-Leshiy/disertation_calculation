@@ -47,13 +47,13 @@ impl Problem3 {
 
         let (x, y, z) = match self.function_type {
             FunctionType::U => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, t| {
                     function_u(
                         self.a,
                         self.b,
                         x,
                         y,
-                        0_f64,
+                        t,
                         self.omega,
                         self.c1,
                         self.c2,
@@ -66,13 +66,13 @@ impl Problem3 {
                 })
             }
             FunctionType::V => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, t| {
                     function_v(
                         self.a,
                         self.b,
                         x,
                         y,
-                        0_f64,
+                        t,
                         self.omega,
                         self.c1,
                         self.c2,
