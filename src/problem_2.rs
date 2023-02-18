@@ -1,6 +1,6 @@
 use crate::{
     integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0, surface_plot},
+    utils::{function_calculation, g, lambda, mu_0, surface_static_plot},
     FunctionType, LoadFunction,
 };
 use clap::Parser;
@@ -96,7 +96,7 @@ impl Problem2 {
             }
         };
 
-        surface_plot(&x, &y, &z[0]);
+        surface_static_plot(&x, &y, &z[0]);
     }
 }
 

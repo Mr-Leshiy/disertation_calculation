@@ -48,27 +48,69 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64>(
     (x, y, z)
 }
 
-pub fn surface_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
-    Command::new("python3")
+pub fn surface_static_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
+    let _res = Command::new("python3")
         .args([
-            "plot/surface_plot.py",
+            "plot/surface_static_plot.py",
             format!("-x={x:?}").as_str(),
             format!("-y={y:?}").as_str(),
             format!("-z={z:?}").as_str(),
         ])
         .output()
         .unwrap();
+    // println!(
+    //     "stout: {}, stderr: {}",
+    //     String::from_utf8(_res.stdout).unwrap(),
+    //     String::from_utf8(_res.stderr).unwrap()
+    // );
+}
+
+pub fn surface_dynamic_plot(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>]) {
+    let _res = Command::new("python3")
+        .args([
+            "plot/surface_dynamic_plot.py",
+            format!("-x={x:?}").as_str(),
+            format!("-y={y:?}").as_str(),
+            format!("-z={z:?}").as_str(),
+        ])
+        .output()
+        .unwrap();
+    // println!(
+    //     "stout: {}, stderr: {}",
+    //     String::from_utf8(_res.stdout).unwrap(),
+    //     String::from_utf8(_res.stderr).unwrap()
+    // );
 }
 
 #[test]
-fn surface_plot_test() {
-    surface_plot(
+fn surface_static_plot_test() {
+    surface_static_plot(
         &vec![1_f64, 2_f64, 3_f64],
         &vec![1_f64, 2_f64, 3_f64],
         &vec![
             vec![5_f64, 5_f64, 5_f64],
             vec![5_f64, 5_f64, 5_f64],
             vec![5_f64, 5_f64, 5_f64],
+        ],
+    );
+}
+
+#[test]
+fn surface_dynamic_plot_test() {
+    surface_dynamic_plot(
+        &vec![1_f64, 2_f64, 3_f64],
+        &vec![1_f64, 2_f64, 3_f64],
+        &vec![
+            vec![
+                vec![5_f64, 5_f64, 5_f64],
+                vec![5_f64, 5_f64, 5_f64],
+                vec![5_f64, 5_f64, 5_f64],
+            ],
+            vec![
+                vec![6_f64, 6_f64, 6_f64],
+                vec![6_f64, 6_f64, 6_f64],
+                vec![6_f64, 6_f64, 6_f64],
+            ],
         ],
     );
 }
