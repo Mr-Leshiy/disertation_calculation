@@ -116,15 +116,16 @@ fn coefficients<F: Fn(f64) -> f64>(
     let e1 = f64::exp(alpha * b);
     let e2 = f64::exp(-alpha * b);
 
-    let a1 = e1 * (2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0)
-        - e2 * (-2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0);
-    let a2 = e1 * (2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha)
-        + e2 * (2_f64 * b * alpha * alpha * mu_0 - 2_f64 * alpha);
+    let a1 = e1 * (b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0)
+        - e2 * (-b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0);
+    let a2 = e1 * (b * alpha * alpha * mu_0 + alpha * mu_0)
+        + e2 * (b * alpha * alpha * mu_0 - alpha * mu_0);
     let a3 = e1 * (-b * alpha * mu_0) - e2 * (b * alpha * mu_0);
     let a4 = e1 * (-b * alpha * mu_0 + 2_f64 + mu_0) + e2 * (-b * alpha * mu_0 - 2_f64 - mu_0);
 
-    let c1 = -coef * ((a4 * a1 - a2 * a3) + (a3 - a1) * a2) / (a1 * (a4 * a1 - a2 * a3));
-    let c2 = coef * (a3 - a1) / (a4 * a1 - a2 * a3);
+    let c1 =
+        -coef * (alpha * (a4 * a1 - a2 * a3) + (alpha * a3 - a1) * a2) / (a1 * (a4 * a1 - a2 * a3));
+    let c2 = coef * (alpha * a3 - a1) / (a4 * a1 - a2 * a3);
     let c3 = -c1;
     let c4 = c2;
 
@@ -426,7 +427,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
     fn coefficients_test() {
         let load_function = |x| x * x;
         let a = 10_f64;
@@ -474,10 +474,10 @@ mod tests {
                 0_f64
             );
             assert!(
-                f64::abs(eq3 + pn * 4_f64 * alpha * (1_f64 + mu_0)) < eps,
+                f64::abs(eq3 + pn * 4_f64 * alpha * alpha * (1_f64 + mu_0)) < eps,
                 "result: {}, exp: {}",
                 eq3,
-                -pn * 4_f64 * alpha * (1_f64 + mu_0)
+                -pn * 4_f64 * alpha * alpha * (1_f64 + mu_0)
             );
             assert!(
                 f64::abs(eq4 + pn * 4_f64 * alpha * (1_f64 + mu_0)) < eps,
