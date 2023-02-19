@@ -820,3 +820,154 @@ fn function_sigma_y<F: Fn(f64) -> f64>(
 
     2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_coefficients_test() {
+        let a = 10_f64;
+        let omega = 0.75;
+        let c1 = 10_f64;
+        let c2 = 10_f64;
+        let puasson_coef = 0.25;
+        let eps = 0.001;
+
+        let mu_0 = mu_0(puasson_coef);
+
+        for i in 1..10 {
+            let alpha = PI * i as f64 / a;
+
+            let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+
+            let func = |s: f64| {
+                (s * s - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+                    * (s * s + s * s * mu_0 - alpha * alpha + omega * omega / c2 / c2)
+                    + s * s * alpha * alpha * mu_0 * mu_0
+            };
+
+            assert!(
+                f64::abs(func(a1) - 0_f64) < eps,
+                "result: {}, exp: {}",
+                func(a1),
+                0_f64
+            );
+            assert!(
+                f64::abs(func(-a1) - 0_f64) < eps,
+                "result: {}, exp: {}",
+                func(-a1),
+                0_f64
+            );
+            assert!(
+                f64::abs(func(a3) - 0_f64) < eps,
+                "result: {}, exp: {}",
+                func(a3),
+                0_f64
+            );
+            assert!(
+                f64::abs(func(-a3) - 0_f64) < eps,
+                "result: {}, exp: {}",
+                func(-a3),
+                0_f64
+            );
+        }
+    }
+
+    #[test]
+    fn c_coefficients_test() {
+        let load_function = |x| x * x;
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let omega = 0.75;
+        let c1 = 10_f64;
+        let c2 = 10_f64;
+        let eps = 0.001;
+
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        for i in 1..10 {
+            let alpha = PI * i as f64 / a;
+
+            let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+
+            let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+                load_function(x) * f64::cos(alpha * x)
+            });
+
+            let e1 = f64::exp(a1 * b) + f64::exp(-a1 * b);
+            let e2 = f64::exp(a1 * b) - f64::exp(-a1 * b);
+            let e3 = f64::exp(a3 * b) + f64::exp(-a3 * b);
+            let e4 = f64::exp(a3 * b) - f64::exp(-a3 * b);
+
+            let z1 = 2_f64 * a1 * (a1 * a1 - a3 * a3);
+            let z2 = 2_f64 * a3 * (a3 * a3 - a1 * a1);
+
+            let x1 = a1 * alpha * mu_0;
+            let x2 = a3 * alpha * mu_0;
+            let x3 = a1 * a1 + a1 * a1 * mu_0 - alpha * alpha + omega * omega / c2 / c2;
+            let x4 = a3 * a3 + a3 * a3 * mu_0 - alpha * alpha + omega * omega / c2 / c2;
+            let x5 = a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1;
+            let x6 = a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1;
+
+            let d1 = e1 * (a1 * x3 + alpha * x1) / z1;
+            let d2 = e2 * (a1 * x1 - alpha * x5) / z1;
+            let d3 = e3 * (a3 * x4 + alpha * x2) / z2;
+            let d4 = e4 * (a3 * x4 - alpha * x6) / z2;
+            let d5 = e2 * (a1 * x3 - a1 * x1 * (2_f64 * g + lambda)) / z1;
+            let d6 = e1 * (a1 * x5 * (2_f64 * g + lambda) + alpha * lambda * x1) / z1;
+            let d7 = e4 * (alpha * lambda * x4 - a3 * x2 * (2_f64 * g + lambda)) / z2;
+            let d8 = e3 * (a3 * x6 * (2_f64 * g + lambda) + alpha * lambda * x2) / z2;
+
+            let (c_1, c_2, c_3, c_4) = c_coefficients(
+                a,
+                b,
+                a1,
+                a3,
+                omega,
+                c1,
+                c2,
+                alpha,
+                mu_0,
+                g,
+                lambda,
+                &load_function,
+                eps,
+            );
+
+            let eq1 = c_1 * d1 + c_2 * d2 + c_3 * d3 + c_4 * d4;
+            let eq2 = c_1 * d5 + c_2 * d6 + c_3 * d7 + c_4 * d8;
+            let eq3 = c_1 * ((a1 * x3 + alpha * x1) / z1) + c_3 * ((alpha * x2 + a3 * x4) / z2);
+            let eq4 = c_1 * (-x1 / z1) + c_3 * (-x2 / z2);
+
+            assert!(
+                f64::abs(eq1 - 0_f64) < eps,
+                "result: {}, exp: {}",
+                eq1,
+                0_f64
+            );
+            assert!(
+                f64::abs(eq2 + pn * (1_f64 + mu_0)) < eps,
+                "result: {}, exp: {}",
+                eq2,
+                -pn * (1_f64 + mu_0)
+            );
+            assert!(
+                f64::abs(eq3 - 0_f64) < eps,
+                "result: {}, exp: {}",
+                eq3,
+                0_f64
+            );
+            assert!(
+                f64::abs(eq4 - 0_f64) < eps,
+                "result: {}, exp: {}",
+                eq4,
+                0_f64
+            );
+        }
+    }
+}
