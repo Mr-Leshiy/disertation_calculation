@@ -86,35 +86,40 @@ pub fn surface_dynamic_plot(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>]) {
     );
 }
 
-#[test]
-fn surface_static_plot_test() {
-    surface_static_plot(
-        &vec![1_f64, 2_f64, 3_f64],
-        &vec![1_f64, 2_f64, 3_f64],
-        &vec![
-            vec![5_f64, 5_f64, 5_f64],
-            vec![5_f64, 5_f64, 5_f64],
-            vec![5_f64, 5_f64, 5_f64],
-        ],
-    );
-}
+#[cfg(test)]
+mod tests {
+    use super::{surface_dynamic_plot, surface_static_plot};
 
-#[test]
-fn surface_dynamic_plot_test() {
-    surface_dynamic_plot(
-        &vec![1_f64, 2_f64, 3_f64],
-        &vec![1_f64, 2_f64, 3_f64],
-        &vec![
-            vec![
+    #[test]
+    fn surface_static_plot_test() {
+        surface_static_plot(
+            &vec![1_f64, 2_f64, 3_f64],
+            &vec![1_f64, 2_f64, 3_f64],
+            &vec![
                 vec![5_f64, 5_f64, 5_f64],
                 vec![5_f64, 5_f64, 5_f64],
                 vec![5_f64, 5_f64, 5_f64],
             ],
-            vec![
-                vec![6_f64, 6_f64, 6_f64],
-                vec![6_f64, 6_f64, 6_f64],
-                vec![6_f64, 6_f64, 6_f64],
+        );
+    }
+
+    #[test]
+    fn surface_dynamic_plot_test() {
+        surface_dynamic_plot(
+            &vec![1_f64, 2_f64, 3_f64],
+            &vec![1_f64, 2_f64, 3_f64],
+            &vec![
+                vec![
+                    vec![5_f64, 5_f64, 5_f64],
+                    vec![5_f64, 5_f64, 5_f64],
+                    vec![5_f64, 5_f64, 5_f64],
+                ],
+                vec![
+                    vec![6_f64, 6_f64, 6_f64],
+                    vec![6_f64, 6_f64, 6_f64],
+                    vec![6_f64, 6_f64, 6_f64],
+                ],
             ],
-        ],
-    );
+        );
+    }
 }

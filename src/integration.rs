@@ -32,26 +32,31 @@ pub fn definite_integral<F: Fn(f64) -> f64>(a: f64, b: f64, mut n: u32, eps: f64
     result
 }
 
-#[test]
-fn test_integration() {
-    let eps = 0.00001;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert!(
-        f64::abs(definite_integral(0_f64, 2_f64, 10, eps, &|x| x) - 2_f64) < eps,
-        "result, {}",
-        definite_integral(0_f64, 2_f64, 10, eps, &|x| x)
-    );
-    assert!(
-        f64::abs(definite_integral(0_f64, 2_f64, 10, eps, &|x| x * x) - 8_f64 / 3_f64) < eps,
-        "result, {}",
-        definite_integral(0_f64, 2_f64, 10, eps, &|x| x * x)
-    );
-    assert!(
-        f64::abs(
+    #[test]
+    fn test_integration() {
+        let eps = 0.00001;
+
+        assert!(
+            f64::abs(definite_integral(0_f64, 2_f64, 10, eps, &|x| x) - 2_f64) < eps,
+            "result, {}",
+            definite_integral(0_f64, 2_f64, 10, eps, &|x| x)
+        );
+        assert!(
+            f64::abs(definite_integral(0_f64, 2_f64, 10, eps, &|x| x * x) - 8_f64 / 3_f64) < eps,
+            "result, {}",
+            definite_integral(0_f64, 2_f64, 10, eps, &|x| x * x)
+        );
+        assert!(
+            f64::abs(
+                definite_integral(0_f64, 2_f64, 10, eps, &|x| f64::sin(x) * 5_f64)
+                    - (-5_f64 * f64::cos(2_f64) + 5_f64)
+            ) < eps,
+            "result, {}",
             definite_integral(0_f64, 2_f64, 10, eps, &|x| f64::sin(x) * 5_f64)
-                - (-5_f64 * f64::cos(2_f64) + 5_f64)
-        ) < eps,
-        "result, {}",
-        definite_integral(0_f64, 2_f64, 10, eps, &|x| f64::sin(x) * 5_f64)
-    );
+        );
+    }
 }

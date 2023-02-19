@@ -420,3 +420,71 @@ fn function_sigma_y<F: Fn(f64) -> f64>(
 
     2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[ignore]
+    fn coefficients_test() {
+        let load_function = |x| x * x;
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let eps = 0.001;
+
+        let mu_0 = mu_0(puasson_coef);
+
+        for i in 1..10 {
+            let alpha = PI * i as f64 / a;
+
+            let e1 = f64::exp(alpha * b);
+            let e2 = f64::exp(-alpha * b);
+            let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+                load_function(x) * f64::cos(alpha * x)
+            });
+
+            let (c1, c2, c3, c4) = coefficients(a, b, alpha, mu_0, &load_function, eps);
+
+            let eq1 = c1 * (2_f64 * alpha + 2_f64 * alpha * mu_0)
+                + c2 * (alpha * mu_0)
+                + c3 * (2_f64 * alpha + 2_f64 * alpha * mu_0)
+                + c4 * (-alpha * mu_0);
+            let eq2 = c2 * (2_f64 + mu_0) + c4 * (-2_f64 - mu_0);
+            let eq3 = c1 * e1 * (b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0)
+                + c2 * e1 * (b * alpha * alpha * mu_0 + alpha * mu_0)
+                + c3 * e2 * (-b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0)
+                + c4 * e2 * (b * alpha * alpha * mu_0 - alpha * mu_0);
+            let eq4 = c1 * e1 * (-b * alpha * mu_0)
+                + c2 * e1 * (-b * alpha * mu_0 + 2_f64 + mu_0)
+                + c3 * e2 * (b * alpha * mu_0)
+                + c4 * e2 * (-b * alpha * mu_0 - 2_f64 - mu_0);
+
+            assert!(
+                f64::abs(eq1 - 0_f64) < eps,
+                "result: {}, exp: {}",
+                eq1,
+                0_f64
+            );
+            assert!(
+                f64::abs(eq2 - 0_f64) < eps,
+                "result: {}, exp: {}",
+                eq2,
+                0_f64
+            );
+            assert!(
+                f64::abs(eq3 + pn * 4_f64 * alpha * (1_f64 + mu_0)) < eps,
+                "result: {}, exp: {}",
+                eq3,
+                -pn * 4_f64 * alpha * (1_f64 + mu_0)
+            );
+            assert!(
+                f64::abs(eq4 + pn * 4_f64 * alpha * (1_f64 + mu_0)) < eps,
+                "result: {}, epx: {}",
+                eq4,
+                -pn * 4_f64 * alpha * (1_f64 + mu_0)
+            );
+        }
+    }
+}
