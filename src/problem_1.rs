@@ -452,7 +452,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
     fn coefficients_test() {
         let load_function = |x| x * x;
         let a = 10_f64;
@@ -494,7 +493,7 @@ mod tests {
                     * (-2_f64 * g * b * alpha * alpha * mu_0 + 2_f64 * g * alpha * mu_0
                         - 2_f64 * lambda * alpha)
                 + c4 * e2
-                    * (2_f64 * g * b * alpha * alpha * mu_0 + (2_f64 * g * lambda) * 2_f64 * alpha);
+                    * (2_f64 * g * b * alpha * alpha * mu_0 + (2_f64 * g + lambda) * 2_f64 * alpha);
             let eq3 = c1 * (2_f64 * alpha + 2_f64 * alpha * mu_0)
                 + c2 * (-2_f64 * alpha)
                 + c3 * (2_f64 * alpha + 2_f64 * alpha * mu_0)
