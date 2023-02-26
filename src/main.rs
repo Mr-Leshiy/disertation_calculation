@@ -3,12 +3,13 @@
 use clap::{Parser, ValueEnum};
 use problem_1::Problem1;
 use problem_2::Problem2;
-use problem_3::Problem3;
+use problem_4::Problem4;
 
 pub mod integration;
 pub mod problem_1;
 pub mod problem_2;
 pub mod problem_3;
+pub mod problem_4;
 pub mod utils;
 
 #[derive(Parser)]
@@ -16,7 +17,7 @@ pub mod utils;
 pub enum Cli {
     Problem1(Problem1),
     Problem2(Problem2),
-    Problem3(Problem3),
+    Problem4(Problem4),
 }
 
 #[derive(Parser, Clone, ValueEnum)]
@@ -51,7 +52,7 @@ impl Cli {
         match self {
             Self::Problem1(problem1) => problem1.exec(),
             Self::Problem2(problem2) => problem2.exec(),
-            Self::Problem3(problem3) => problem3.exec(),
+            Self::Problem4(problem4) => problem4.exec(),
         }
     }
 }
