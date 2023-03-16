@@ -101,7 +101,7 @@ impl Problem2 {
 }
 
 // returns c1, c2, c3, c4 coefficients
-fn coefficients<F: Fn(f64) -> f64>(
+fn coefficients<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     alpha: f64,
@@ -132,7 +132,7 @@ fn coefficients<F: Fn(f64) -> f64>(
     (c1, c2, c3, c4)
 }
 
-fn function_un<F: Fn(f64) -> f64>(
+fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     y: f64,
@@ -155,7 +155,7 @@ fn function_un<F: Fn(f64) -> f64>(
     res * coef
 }
 
-fn function_vn<F: Fn(f64) -> f64>(
+fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     y: f64,
@@ -178,7 +178,7 @@ fn function_vn<F: Fn(f64) -> f64>(
     res * coef
 }
 
-fn function_derivative_vn<F: Fn(f64) -> f64>(
+fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     y: f64,
@@ -201,7 +201,7 @@ fn function_derivative_vn<F: Fn(f64) -> f64>(
     res * coef
 }
 
-fn function_u<F: Fn(f64) -> f64>(
+fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -248,7 +248,7 @@ fn function_u<F: Fn(f64) -> f64>(
     result
 }
 
-fn function_derivative_u_x<F: Fn(f64) -> f64>(
+fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -298,7 +298,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64>(
     result
 }
 
-fn function_v<F: Fn(f64) -> f64>(
+fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -342,7 +342,7 @@ fn function_v<F: Fn(f64) -> f64>(
     result
 }
 
-fn function_derivative_v_y<F: Fn(f64) -> f64>(
+fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -388,7 +388,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64>(
     result
 }
 
-fn function_sigma_x<F: Fn(f64) -> f64>(
+fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -405,7 +405,7 @@ fn function_sigma_x<F: Fn(f64) -> f64>(
     2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
 }
 
-fn function_sigma_y<F: Fn(f64) -> f64>(
+fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
