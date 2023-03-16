@@ -4,6 +4,7 @@ use crate::{
     FunctionType, LoadFunction,
 };
 use clap::Parser;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::f64::consts::PI;
 
 #[derive(Parser)]
@@ -233,14 +234,17 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let mut prev_result;
 
     if x != a && x != 0_f64 {
-        for i in 1..n {
-            let alpha = PI * i as f64 / a;
-            result += 2_f64
-                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                * f64::sin(alpha * x)
-                / a
-                / (1_f64 + mu_0);
-        }
+        result = (1..n)
+            .into_par_iter()
+            .map(|i| {
+                let alpha = PI * i as f64 / a;
+                2_f64
+                    * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                    * f64::sin(alpha * x)
+                    / a
+                    / (1_f64 + mu_0)
+            })
+            .sum();
     }
 
     loop {
@@ -249,14 +253,17 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
         result = 0_f64;
 
         if x != a && x != 0_f64 {
-            for i in 1..n {
-                let alpha = PI * i as f64 / a;
-                result += 2_f64
-                    * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                    * f64::sin(alpha * x)
-                    / a
-                    / (1_f64 + mu_0);
-            }
+            result = (1..n)
+                .into_par_iter()
+                .map(|i| {
+                    let alpha = PI * i as f64 / a;
+                    2_f64
+                        * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                        * f64::sin(alpha * x)
+                        / a
+                        / (1_f64 + mu_0)
+                })
+                .sum()
         }
 
         if f64::abs(result - prev_result) < eps {
@@ -283,15 +290,18 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     let mut prev_result;
 
     if x != a && x != 0_f64 {
-        for i in 1..n {
-            let alpha = PI * i as f64 / a;
-            result += 2_f64
-                * alpha
-                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                * f64::cos(alpha * x)
-                / a
-                / (1_f64 + mu_0);
-        }
+        result = (0..n)
+            .into_par_iter()
+            .map(|i| {
+                let alpha = PI * i as f64 / a;
+                2_f64
+                    * alpha
+                    * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                    * f64::cos(alpha * x)
+                    / a
+                    / (1_f64 + mu_0)
+            })
+            .sum();
     }
 
     loop {
@@ -300,15 +310,18 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
         result = 0_f64;
 
         if x != a && x != 0_f64 {
-            for i in 1..n {
-                let alpha = PI * i as f64 / a;
-                result += 2_f64
-                    * alpha
-                    * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                    * f64::cos(alpha * x)
-                    / a
-                    / (1_f64 + mu_0);
-            }
+            result = (0..n)
+                .into_par_iter()
+                .map(|i| {
+                    let alpha = PI * i as f64 / a;
+                    2_f64
+                        * alpha
+                        * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                        * f64::cos(alpha * x)
+                        / a
+                        / (1_f64 + mu_0)
+                })
+                .sum();
         }
 
         if f64::abs(result - prev_result) < eps {
@@ -335,28 +348,34 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     let mut result = -p0 * y / a / (2_f64 * g + lambda);
     let mut prev_result;
 
-    for i in 1..n {
-        let alpha = PI * i as f64 / a;
-        result += 2_f64
-            * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-            * f64::cos(alpha * x)
-            / a
-            / (1_f64 + mu_0);
-    }
+    result += (1..n)
+        .into_par_iter()
+        .map(|i| {
+            let alpha = PI * i as f64 / a;
+            2_f64
+                * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                * f64::cos(alpha * x)
+                / a
+                / (1_f64 + mu_0)
+        })
+        .sum::<f64>();
 
     loop {
         n *= 2;
         prev_result = result;
         result = -p0 * y / a / (2_f64 * g + lambda);
 
-        for i in 1..n {
-            let alpha = PI * i as f64 / a;
-            result += 2_f64
-                * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                * f64::cos(alpha * x)
-                / a
-                / (1_f64 + mu_0);
-        }
+        result += (1..n)
+            .into_par_iter()
+            .map(|i| {
+                let alpha = PI * i as f64 / a;
+                2_f64
+                    * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                    * f64::cos(alpha * x)
+                    / a
+                    / (1_f64 + mu_0)
+            })
+            .sum::<f64>();
 
         if f64::abs(result - prev_result) < eps {
             break;
@@ -382,28 +401,34 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     let mut result = -p0 * y / a / (2_f64 * g + lambda);
     let mut prev_result;
 
-    for i in 1..n {
-        let alpha = PI * i as f64 / a;
-        result += 2_f64
-            * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-            * f64::cos(alpha * x)
-            / a
-            / (1_f64 + mu_0);
-    }
+    result += (1..n)
+        .into_par_iter()
+        .map(|i| {
+            let alpha = PI * i as f64 / a;
+            2_f64
+                * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                * f64::cos(alpha * x)
+                / a
+                / (1_f64 + mu_0)
+        })
+        .sum::<f64>();
 
     loop {
         n *= 2;
         prev_result = result;
         result = -p0 * y / a / (2_f64 * g + lambda);
 
-        for i in 1..n {
-            let alpha = PI * i as f64 / a;
-            result += 2_f64
-                * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                * f64::cos(alpha * x)
-                / a
-                / (1_f64 + mu_0);
-        }
+        result += (1..n)
+            .into_par_iter()
+            .map(|i| {
+                let alpha = PI * i as f64 / a;
+                2_f64
+                    * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                    * f64::cos(alpha * x)
+                    / a
+                    / (1_f64 + mu_0)
+            })
+            .sum::<f64>();
 
         if f64::abs(result - prev_result) < eps {
             break;
