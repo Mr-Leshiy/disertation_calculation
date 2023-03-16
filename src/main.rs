@@ -5,12 +5,13 @@ use problem_1::Problem1;
 use problem_2::Problem2;
 use problem_4::Problem4;
 
-pub mod integration;
-pub mod problem_1;
-pub mod problem_2;
-pub mod problem_3;
-pub mod problem_4;
-pub mod utils;
+mod integration;
+mod problem_1;
+mod problem_2;
+mod problem_3;
+mod problem_4;
+mod matrices;
+mod utils;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, rename_all = "snake-case")]
