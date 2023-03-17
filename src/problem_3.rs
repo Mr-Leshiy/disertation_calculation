@@ -1,5 +1,39 @@
-use crate::utils::{g, lambda, mu_0};
+use crate::{
+    integration::definite_integral,
+    polynomials::chebyshev,
+    utils::{g, lambda, mu_0},
+};
 use std::f64::consts::PI;
+
+fn h_m(a: f64, m: usize, eps: f64) -> f64 {
+    let f = |x| {
+        let a1 = chebyshev(f64::cos(x * PI / (2_f64 * a)), 2 * m + 1);
+        let a2 = f64::sqrt(1_f64 - x * x);
+        a1 / a2
+    };
+    definite_integral(-1_f64, 1_f64, 100, eps, &f)
+}
+
+fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    m: usize,
+    eps: f64,
+) -> f64 {
+    let a4 = a * (f64::cosh(b * PI / a) - 1_f64);
+    // let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+    //     load_function(x) * f64::cos(alpha * x)
+    // });
+    let f = |x| {
+        let a1 = chebyshev(f64::cos(x * PI / (2_f64 * a)), 2 * m + 1);
+        let a2 = f64::sqrt(1_f64 - x * x);
+        a1 / a2
+    };
+    definite_integral(-1_f64, 1_f64, 100, eps, &f)
+}
 
 fn coefficients(
     b: f64,
