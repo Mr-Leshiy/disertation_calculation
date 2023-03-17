@@ -30,6 +30,16 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
             });
         }
     }
+
+    pub fn column_swap(&mut self, column1: usize, column2: usize) {
+        if column1 != column2 {
+            (0..N).into_iter().for_each(|row| {
+                let tmp = self.elements[row][column1];
+                self.elements[row][column1] = self.elements[row][column2];
+                self.elements[row][column2] = tmp;
+            });
+        }
+    }
 }
 
 pub fn add<const N: usize, const M: usize>(a: &Matrix<N, M>, b: &Matrix<N, M>) -> Matrix<N, M> {
@@ -91,9 +101,9 @@ pub fn mul<const N1: usize, const M1: usize, const N2: usize, const M2: usize>(
 
 pub fn gaussian_elimination<const N: usize, const M: usize>(
     mut a: Matrix<N, M>,
-    mut left: Matrix<N, 1>,
+    mut left: Matrix<1, N>,
     eps: f64,
-) -> (Matrix<N, M>, Matrix<N, 1>) {
+) -> (Matrix<N, M>, Matrix<1, N>) {
     let mut h = 0;
     let mut k = 0;
     while h < N && k < M {
@@ -109,13 +119,13 @@ pub fn gaussian_elimination<const N: usize, const M: usize>(
             k += 1;
         } else {
             a.raw_swap(h, i_max);
-            left.raw_swap(h, i_max);
+            left.column_swap(h, i_max);
             (h + 1..N).into_iter().for_each(|i| {
                 let f = a.get_element(i, k) / a.get_element(h, k);
                 a.update_element(i, k, 0_f64);
 
-                let left_new_val = left.get_element(i, 0) - left.get_element(h, 0) * f;
-                left.update_element(i, 0, left_new_val);
+                let left_new_val = left.get_element(0, i) - left.get_element(0, h) * f;
+                left.update_element(0, i, left_new_val);
 
                 (k + 1..M).into_iter().for_each(|j| {
                     let new_val = a.get_element(i, j) - a.get_element(h, j) * f;
@@ -131,20 +141,20 @@ pub fn gaussian_elimination<const N: usize, const M: usize>(
 
 pub fn system_solve<const N: usize, const M: usize>(
     a: Matrix<N, M>,
-    left: Matrix<N, 1>,
+    left: Matrix<1, N>,
     eps: f64,
-) -> Matrix<N, 1> {
+) -> Matrix<1, N> {
     let (a, left) = gaussian_elimination(a, left, eps);
-    let mut res = Matrix::<N, 1>::new(vec![vec![0_f64]; N]);
+    let mut res = Matrix::<1, N>::new(vec![vec![0_f64; N]]);
 
     (0..N).rev().for_each(|i| {
         let sum = (i + 1..M)
             .rev()
-            .map(|j| res.get_element(j, 0) * a.get_element(i, j))
+            .map(|j| res.get_element(0, j) * a.get_element(i, j))
             .sum::<f64>();
-        let left_val = left.get_element(i, 0) - sum;
+        let left_val = left.get_element(0, i) - sum;
         let val = left_val / a.get_element(i, i);
-        res.update_element(i, 0, val);
+        res.update_element(0, i, val);
     });
     res
 }
@@ -212,14 +222,14 @@ mod tests {
             vec![-3_f64, -1_f64, 2_f64],
             vec![-2_f64, 1_f64, 2_f64],
         ]);
-        let left = Matrix::<3, 1>::new(vec![vec![8_f64], vec![-11_f64], vec![-3_f64]]);
+        let left = Matrix::<1, 3>::new(vec![vec![8_f64, -11_f64, -3_f64]]);
 
         let expected = Matrix::<3, 3>::new(vec![
             vec![2_f64, 1_f64, -1_f64],
             vec![0_f64, 2_f64, 1_f64],
             vec![0_f64, 0_f64, 0.25_f64],
         ]);
-        let left_expected = Matrix::<3, 1>::new(vec![vec![8_f64], vec![5_f64], vec![-0.25_f64]]);
+        let left_expected = Matrix::<1, 3>::new(vec![vec![8_f64, 5_f64, -0.25_f64]]);
 
         let (a, left) = gaussian_elimination(a, left, eps);
         assert_eq!(a, expected);
@@ -234,9 +244,9 @@ mod tests {
             vec![-3_f64, -1_f64, 2_f64],
             vec![-2_f64, 1_f64, 2_f64],
         ]);
-        let left = Matrix::<3, 1>::new(vec![vec![8_f64], vec![-11_f64], vec![-3_f64]]);
+        let left = Matrix::<1, 3>::new(vec![vec![8_f64, -11_f64, -3_f64]]);
 
-        let expected = Matrix::<3, 1>::new(vec![vec![2_f64], vec![3_f64], vec![-1_f64]]);
+        let expected = Matrix::<1, 3>::new(vec![vec![2_f64, 3_f64, -1_f64]]);
 
         let res = system_solve(a, left, eps);
         assert_eq!(res, expected);
