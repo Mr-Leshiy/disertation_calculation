@@ -12,6 +12,7 @@ mod problem_2;
 mod problem_3;
 mod problem_4;
 mod utils;
+mod polynomials;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, rename_all = "snake-case")]

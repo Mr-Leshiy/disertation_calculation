@@ -1,16 +1,27 @@
 use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Matrix<const N: usize, const M: usize> {
+pub struct Matrix {
     elements: Vec<Vec<f64>>,
 }
 
-impl<const N: usize, const M: usize> Matrix<N, M> {
+impl Matrix {
     pub fn new(elements: Vec<Vec<f64>>) -> Self {
-        assert_eq!(elements.len(), N);
-        elements.par_iter().for_each(|row| assert_eq!(row.len(), M));
+        let n = elements.len();
+        assert!(n > 0);
+        let m = elements[0].len();
+        assert!(m > 0);
+        elements.par_iter().for_each(|row| assert_eq!(row.len(), m));
 
         Self { elements }
+    }
+
+    pub fn n(&self) -> usize {
+        self.elements.len()
+    }
+
+    pub fn m(&self) -> usize {
+        self.elements[0].len()
     }
 
     pub fn get_element(&self, row: usize, column: usize) -> f64 {
@@ -23,7 +34,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     pub fn raw_swap(&mut self, row1: usize, row2: usize) {
         if row1 != row2 {
-            (0..M).into_iter().for_each(|column| {
+            (0..self.m()).into_iter().for_each(|column| {
                 let tmp = self.elements[row1][column];
                 self.elements[row1][column] = self.elements[row2][column];
                 self.elements[row2][column] = tmp;
@@ -33,7 +44,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     pub fn column_swap(&mut self, column1: usize, column2: usize) {
         if column1 != column2 {
-            (0..N).into_iter().for_each(|row| {
+            (0..self.n()).into_iter().for_each(|row| {
                 let tmp = self.elements[row][column1];
                 self.elements[row][column1] = self.elements[row][column2];
                 self.elements[row][column2] = tmp;
@@ -42,48 +53,51 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
 }
 
-pub fn add<const N: usize, const M: usize>(a: &Matrix<N, M>, b: &Matrix<N, M>) -> Matrix<N, M> {
-    let res = (0..N)
+pub fn add(a: &Matrix, b: &Matrix) -> Matrix {
+    assert_eq!(a.n(), b.n());
+    assert_eq!(a.m(), b.m());
+
+    let res = (0..a.n())
         .into_par_iter()
         .map(|row| {
-            (0..M)
+            (0..a.m())
                 .into_par_iter()
                 .map(|column| a.get_element(row, column) + b.get_element(row, column))
                 .collect()
         })
         .collect();
 
-    Matrix::<N, M>::new(res)
+    Matrix::new(res)
 }
 
-pub fn sub<const N: usize, const M: usize>(a: &Matrix<N, M>, b: &Matrix<N, M>) -> Matrix<N, M> {
-    let res = (0..N)
+pub fn sub(a: &Matrix, b: &Matrix) -> Matrix {
+    assert_eq!(a.n(), b.n());
+    assert_eq!(a.m(), b.m());
+
+    let res = (0..a.n())
         .into_par_iter()
         .map(|row| {
-            (0..M)
+            (0..b.m())
                 .into_par_iter()
                 .map(|column| a.get_element(row, column) - b.get_element(row, column))
                 .collect()
         })
         .collect();
 
-    Matrix::<N, M>::new(res)
+    Matrix::new(res)
 }
 
-pub fn mul<const N1: usize, const M1: usize, const N2: usize, const M2: usize>(
-    a: &Matrix<N1, M1>,
-    b: &Matrix<N2, M2>,
-) -> Matrix<N1, M2> {
-    assert_eq!(M1, N2, "cannot perfom matrix multiplication");
+pub fn mul(a: &Matrix, b: &Matrix) -> Matrix {
+    assert_eq!(a.m(), b.n());
 
-    let res: Vec<Vec<_>> = (0..N1)
+    let res: Vec<Vec<_>> = (0..a.n())
         .into_par_iter()
         .map(|row_1| {
-            (0..M2)
+            (0..b.m())
                 .into_par_iter()
                 .map(|column_2| {
-                    (0..M1)
-                        .zip(0..N2)
+                    (0..a.m())
+                        .zip(0..b.n())
                         .map(|(comunm_1, row_2)| {
                             a.get_element(row_1, comunm_1) * b.get_element(row_2, column_2)
                         })
@@ -93,23 +107,19 @@ pub fn mul<const N1: usize, const M1: usize, const N2: usize, const M2: usize>(
         })
         .collect();
 
-    assert_eq!(res.len(), N1);
-    assert_eq!(res[0].len(), M2);
-
     Matrix::new(res)
 }
 
-pub fn gaussian_elimination<const N: usize, const M: usize>(
-    mut a: Matrix<N, M>,
-    mut left: Matrix<1, N>,
-    eps: f64,
-) -> (Matrix<N, M>, Matrix<1, N>) {
+pub fn gaussian_elimination(mut a: Matrix, mut left: Matrix, eps: f64) -> (Matrix, Matrix) {
+    assert_eq!(left.n(), 1);
+    assert_eq!(left.m(), a.n());
+
     let mut h = 0;
     let mut k = 0;
-    while h < N && k < M {
+    while h < a.n() && k < a.m() {
         let mut max = f64::abs(a.get_element(h, k));
         let mut i_max = h;
-        (h..N).into_iter().for_each(|i| {
+        (h..a.n()).into_iter().for_each(|i| {
             if a.get_element(i, k) > max {
                 max = a.get_element(i, k);
                 i_max = i;
@@ -120,14 +130,14 @@ pub fn gaussian_elimination<const N: usize, const M: usize>(
         } else {
             a.raw_swap(h, i_max);
             left.column_swap(h, i_max);
-            (h + 1..N).into_iter().for_each(|i| {
+            (h + 1..a.n()).into_iter().for_each(|i| {
                 let f = a.get_element(i, k) / a.get_element(h, k);
                 a.update_element(i, k, 0_f64);
 
                 let left_new_val = left.get_element(0, i) - left.get_element(0, h) * f;
                 left.update_element(0, i, left_new_val);
 
-                (k + 1..M).into_iter().for_each(|j| {
+                (k + 1..a.m()).into_iter().for_each(|j| {
                     let new_val = a.get_element(i, j) - a.get_element(h, j) * f;
                     a.update_element(i, j, new_val);
                 })
@@ -139,16 +149,13 @@ pub fn gaussian_elimination<const N: usize, const M: usize>(
     (a, left)
 }
 
-pub fn system_solve<const N: usize, const M: usize>(
-    a: Matrix<N, M>,
-    left: Matrix<1, N>,
-    eps: f64,
-) -> Matrix<1, N> {
+pub fn system_solve(a: Matrix, left: Matrix, eps: f64) -> Matrix {
+    assert_eq!(a.n(), a.m());
     let (a, left) = gaussian_elimination(a, left, eps);
-    let mut res = Matrix::<1, N>::new(vec![vec![0_f64; N]]);
+    let mut res = Matrix::new(vec![vec![0_f64; a.n()]]);
 
-    (0..N).rev().for_each(|i| {
-        let sum = (i + 1..M)
+    (0..a.n()).rev().for_each(|i| {
+        let sum = (i + 1..a.m())
             .rev()
             .map(|j| res.get_element(0, j) * a.get_element(i, j))
             .sum::<f64>();
@@ -165,12 +172,12 @@ mod tests {
 
     #[test]
     fn matrix_raw_swap_test() {
-        let mut a = Matrix::<3, 3>::new(vec![
+        let mut a = Matrix::new(vec![
             vec![1_f64, 2_f64, 3_f64],
             vec![4_f64, 5_f64, 6_f64],
             vec![7_f64, 8_f64, 9_f64],
         ]);
-        let expected = Matrix::<3, 3>::new(vec![
+        let expected = Matrix::new(vec![
             vec![7_f64, 8_f64, 9_f64],
             vec![4_f64, 5_f64, 6_f64],
             vec![1_f64, 2_f64, 3_f64],
@@ -184,9 +191,9 @@ mod tests {
     fn matrix_add_test() {
         const N: usize = 1000;
         const M: usize = 1000;
-        let a = Matrix::<N, M>::new(vec![vec![1_f64; M]; N]);
-        let b = Matrix::<N, M>::new(vec![vec![2_f64; M]; N]);
-        let expected = Matrix::<N, M>::new(vec![vec![3_f64; M]; N]);
+        let a = Matrix::new(vec![vec![1_f64; M]; N]);
+        let b = Matrix::new(vec![vec![2_f64; M]; N]);
+        let expected = Matrix::new(vec![vec![3_f64; M]; N]);
 
         let c = add(&a, &b);
         assert_eq!(c, expected);
@@ -196,9 +203,9 @@ mod tests {
     fn matrix_sub_test() {
         const N: usize = 1000;
         const M: usize = 1000;
-        let a = Matrix::<N, M>::new(vec![vec![1_f64; M]; N]);
-        let b = Matrix::<N, M>::new(vec![vec![3_f64; M]; N]);
-        let expected = Matrix::<N, M>::new(vec![vec![2_f64; M]; N]);
+        let a = Matrix::new(vec![vec![1_f64; M]; N]);
+        let b = Matrix::new(vec![vec![3_f64; M]; N]);
+        let expected = Matrix::new(vec![vec![2_f64; M]; N]);
 
         let c = sub(&b, &a);
         assert_eq!(c, expected);
@@ -206,9 +213,9 @@ mod tests {
 
     #[test]
     fn matrix_mul_test() {
-        let a = Matrix::<2, 2>::new(vec![vec![1_f64, 2_f64], vec![3_f64, 4_f64]]);
-        let b = Matrix::<2, 2>::new(vec![vec![5_f64, 6_f64], vec![7_f64, 8_f64]]);
-        let expected = Matrix::<2, 2>::new(vec![vec![19_f64, 22_f64], vec![43_f64, 50_f64]]);
+        let a = Matrix::new(vec![vec![1_f64, 2_f64], vec![3_f64, 4_f64]]);
+        let b = Matrix::new(vec![vec![5_f64, 6_f64], vec![7_f64, 8_f64]]);
+        let expected = Matrix::new(vec![vec![19_f64, 22_f64], vec![43_f64, 50_f64]]);
 
         let c = mul(&a, &b);
         assert_eq!(c, expected);
@@ -217,19 +224,19 @@ mod tests {
     #[test]
     fn gaussian_elimination_test() {
         let eps = 0.000001;
-        let a = Matrix::<3, 3>::new(vec![
+        let a = Matrix::new(vec![
             vec![2_f64, 1_f64, -1_f64],
             vec![-3_f64, -1_f64, 2_f64],
             vec![-2_f64, 1_f64, 2_f64],
         ]);
-        let left = Matrix::<1, 3>::new(vec![vec![8_f64, -11_f64, -3_f64]]);
+        let left = Matrix::new(vec![vec![8_f64, -11_f64, -3_f64]]);
 
-        let expected = Matrix::<3, 3>::new(vec![
+        let expected = Matrix::new(vec![
             vec![2_f64, 1_f64, -1_f64],
             vec![0_f64, 2_f64, 1_f64],
             vec![0_f64, 0_f64, 0.25_f64],
         ]);
-        let left_expected = Matrix::<1, 3>::new(vec![vec![8_f64, 5_f64, -0.25_f64]]);
+        let left_expected = Matrix::new(vec![vec![8_f64, 5_f64, -0.25_f64]]);
 
         let (a, left) = gaussian_elimination(a, left, eps);
         assert_eq!(a, expected);
@@ -239,14 +246,14 @@ mod tests {
     #[test]
     fn system_solve_test() {
         let eps = 0.000001;
-        let a = Matrix::<3, 3>::new(vec![
+        let a = Matrix::new(vec![
             vec![2_f64, 1_f64, -1_f64],
             vec![-3_f64, -1_f64, 2_f64],
             vec![-2_f64, 1_f64, 2_f64],
         ]);
-        let left = Matrix::<1, 3>::new(vec![vec![8_f64, -11_f64, -3_f64]]);
+        let left = Matrix::new(vec![vec![8_f64, -11_f64, -3_f64]]);
 
-        let expected = Matrix::<1, 3>::new(vec![vec![2_f64, 3_f64, -1_f64]]);
+        let expected = Matrix::new(vec![vec![2_f64, 3_f64, -1_f64]]);
 
         let res = system_solve(a, left, eps);
         assert_eq!(res, expected);
