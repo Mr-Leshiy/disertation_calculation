@@ -1,10 +1,9 @@
 use crate::{
     integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0, surface_dynamic_plot},
+    utils::{function_calculation, g, lambda, mu_0, sum_calc, surface_dynamic_plot},
     FunctionType, LoadFunction,
 };
 use clap::Parser;
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::f64::consts::PI;
 
 #[derive(Parser)]
@@ -393,80 +392,41 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let mut n = 10;
-    let mut result = 0_f64;
-    let mut prev_result;
+    let initial_value = 0_f64;
+    let n = 10;
+    let start = 1;
 
     // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
     let cos_t = f64::cos(omega * t);
 
-    if x != a && x != 0_f64 {
-        result = (1..n)
-            .into_par_iter()
-            .map(|i| {
-                let alpha = PI * i as f64 / a;
-                2_f64
-                    * function_un(
-                        y,
-                        a,
-                        b,
-                        omega,
-                        c1,
-                        c2,
-                        alpha,
-                        mu_0,
-                        g,
-                        lambda,
-                        load_function,
-                        eps,
-                    )
-                    * f64::sin(alpha * x)
-                    * cos_t
-                    / a
-                    / (1_f64 + mu_0)
-            })
-            .sum();
-    }
-
-    loop {
-        n *= 2;
-        prev_result = result;
-        result = 0_f64;
-
+    let f = |i| {
         if x != a && x != 0_f64 {
-            result = (1..n)
-                .into_par_iter()
-                .map(|i| {
-                    let alpha = PI * i as f64 / a;
-                    2_f64
-                        * function_un(
-                            y,
-                            a,
-                            b,
-                            omega,
-                            c1,
-                            c2,
-                            alpha,
-                            mu_0,
-                            g,
-                            lambda,
-                            load_function,
-                            eps,
-                        )
-                        * f64::sin(alpha * x)
-                        * cos_t
-                        / a
-                        / (1_f64 + mu_0)
-                })
-                .sum();
+            let alpha = PI * i as f64 / a;
+            2_f64
+                * function_un(
+                    y,
+                    a,
+                    b,
+                    omega,
+                    c1,
+                    c2,
+                    alpha,
+                    mu_0,
+                    g,
+                    lambda,
+                    load_function,
+                    eps,
+                )
+                * f64::sin(alpha * x)
+                * cos_t
+                / a
+                / (1_f64 + mu_0)
+        } else {
+            0_f64
         }
+    };
 
-        if f64::abs(result - prev_result) < eps {
-            break;
-        }
-    }
-
-    result
+    sum_calc(initial_value, &f, eps, start, n)
 }
 
 fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -484,82 +444,42 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let mut n = 10;
-    let mut result = 0_f64;
-    let mut prev_result;
+    let initial_value = 0_f64;
+    let n = 10;
+    let start = 1;
 
     // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
     let cos_t = f64::cos(omega * t);
 
-    if x != a && x != 0_f64 {
-        result = (1..n)
-            .into_par_iter()
-            .map(|i| {
-                let alpha = PI * i as f64 / a;
-                2_f64
-                    * alpha
-                    * function_un(
-                        y,
-                        a,
-                        b,
-                        omega,
-                        c1,
-                        c2,
-                        alpha,
-                        mu_0,
-                        g,
-                        lambda,
-                        load_function,
-                        eps,
-                    )
-                    * f64::cos(alpha * x)
-                    * cos_t
-                    / a
-                    / (1_f64 + mu_0)
-            })
-            .sum();
-    }
-
-    loop {
-        n *= 2;
-        prev_result = result;
-        result = 0_f64;
-
+    let f = |i| {
         if x != a && x != 0_f64 {
-            result = (1..n)
-                .into_par_iter()
-                .map(|i| {
-                    let alpha = PI * i as f64 / a;
-                    2_f64
-                        * alpha
-                        * function_un(
-                            y,
-                            a,
-                            b,
-                            omega,
-                            c1,
-                            c2,
-                            alpha,
-                            mu_0,
-                            g,
-                            lambda,
-                            load_function,
-                            eps,
-                        )
-                        * f64::cos(alpha * x)
-                        * cos_t
-                        / a
-                        / (1_f64 + mu_0)
-                })
-                .sum();
+            let alpha = PI * i as f64 / a;
+            2_f64
+                * alpha
+                * function_un(
+                    y,
+                    a,
+                    b,
+                    omega,
+                    c1,
+                    c2,
+                    alpha,
+                    mu_0,
+                    g,
+                    lambda,
+                    load_function,
+                    eps,
+                )
+                * f64::cos(alpha * x)
+                * cos_t
+                / a
+                / (1_f64 + mu_0)
+        } else {
+            0_f64
         }
+    };
 
-        if f64::abs(result - prev_result) < eps {
-            break;
-        }
-    }
-
-    result
+    sum_calc(initial_value, &f, eps, start, n)
 }
 
 fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
@@ -577,81 +497,42 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let mut n = 10;
     let p0 = definite_integral(0_f64, a, 100, eps, load_function);
     let v0 = -p0 * f64::sin(y * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0))))
         / ((2_f64 * g + lambda)
             * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))
             * f64::sin(b * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))));
-    let mut result = v0 / a;
-    let mut prev_result;
+    let initial_value = v0 / a;
+    let n = 10;
+    let start = 1;
 
     // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
     let cos_t = f64::cos(omega * t);
 
-    result += (1..n)
-        .into_par_iter()
-        .map(|i| {
-            let alpha = PI * i as f64 / a;
-            2_f64
-                * function_vn(
-                    y,
-                    a,
-                    b,
-                    omega,
-                    c1,
-                    c2,
-                    alpha,
-                    mu_0,
-                    g,
-                    lambda,
-                    load_function,
-                    eps,
-                )
-                * f64::cos(alpha * x)
-                * cos_t
-                / a
-                / (1_f64 + mu_0)
-        })
-        .sum::<f64>();
+    let f = |i| {
+        let alpha = PI * i as f64 / a;
+        2_f64
+            * function_vn(
+                y,
+                a,
+                b,
+                omega,
+                c1,
+                c2,
+                alpha,
+                mu_0,
+                g,
+                lambda,
+                load_function,
+                eps,
+            )
+            * f64::cos(alpha * x)
+            * cos_t
+            / a
+            / (1_f64 + mu_0)
+    };
 
-    loop {
-        n *= 2;
-        prev_result = result;
-        result = v0 / a;
-
-        result += (1..n)
-            .into_par_iter()
-            .map(|i| {
-                let alpha = PI * i as f64 / a;
-                2_f64
-                    * function_vn(
-                        y,
-                        a,
-                        b,
-                        omega,
-                        c1,
-                        c2,
-                        alpha,
-                        mu_0,
-                        g,
-                        lambda,
-                        load_function,
-                        eps,
-                    )
-                    * f64::cos(alpha * x)
-                    * cos_t
-                    / a
-                    / (1_f64 + mu_0)
-            })
-            .sum::<f64>();
-
-        if f64::abs(result - prev_result) < eps {
-            break;
-        }
-    }
-
-    result
+    sum_calc(initial_value, &f, eps, start, n)
 }
 
 fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -669,81 +550,42 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let mut n = 10;
     let p0 = definite_integral(0_f64, a, 100, eps, load_function);
     let v0 = -p0 * f64::sin(y * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0))))
         / ((2_f64 * g + lambda)
             * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))
             * f64::sin(b * f64::sqrt(omega * omega / (c2 * c2 * (1_f64 + mu_0)))));
-    let mut result = v0 / a;
-    let mut prev_result;
+    let initial_value = v0 / a;
+    let n = 10;
+    let start = 1;
 
     // actually we should have a e^(i*omega*t), but for simplicity we are taking only real part
     let cos_t = f64::cos(omega * t);
 
-    result += (1..n)
-        .into_par_iter()
-        .map(|i| {
-            let alpha = PI * i as f64 / a;
-            2_f64
-                * function_derivative_vn(
-                    y,
-                    a,
-                    b,
-                    omega,
-                    c1,
-                    c2,
-                    alpha,
-                    mu_0,
-                    g,
-                    lambda,
-                    load_function,
-                    eps,
-                )
-                * f64::cos(alpha * x)
-                * cos_t
-                / a
-                / (1_f64 + mu_0)
-        })
-        .sum::<f64>();
+    let f = |i| {
+        let alpha = PI * i as f64 / a;
+        2_f64
+            * function_derivative_vn(
+                y,
+                a,
+                b,
+                omega,
+                c1,
+                c2,
+                alpha,
+                mu_0,
+                g,
+                lambda,
+                load_function,
+                eps,
+            )
+            * f64::cos(alpha * x)
+            * cos_t
+            / a
+            / (1_f64 + mu_0)
+    };
 
-    loop {
-        n *= 2;
-        prev_result = result;
-        result = v0 / a;
-
-        result += (1..n)
-            .into_par_iter()
-            .map(|i| {
-                let alpha = PI * i as f64 / a;
-                2_f64
-                    * function_derivative_vn(
-                        y,
-                        a,
-                        b,
-                        omega,
-                        c1,
-                        c2,
-                        alpha,
-                        mu_0,
-                        g,
-                        lambda,
-                        load_function,
-                        eps,
-                    )
-                    * f64::cos(alpha * x)
-                    * cos_t
-                    / a
-                    / (1_f64 + mu_0)
-            })
-            .sum::<f64>();
-
-        if f64::abs(result - prev_result) < eps {
-            break;
-        }
-    }
-
-    result
+    sum_calc(initial_value, &f, eps, start, n)
 }
 
 fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(

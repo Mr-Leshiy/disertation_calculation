@@ -19,20 +19,20 @@ pub fn sum_calc<F: Fn(usize) -> f64 + Send + Sync>(
     initial_value: f64,
     f: &F,
     eps: f64,
-    n: usize,
+    start: usize,
+    mut n: usize,
 ) -> f64 {
-    let mut n = 10;
     let mut result = initial_value;
     let mut prev_result;
 
-    result += (1..n).into_par_iter().map(|i| f(i)).sum::<f64>();
+    result += (start..n).into_par_iter().map(|i| f(i)).sum::<f64>();
 
     loop {
         n *= 2;
         prev_result = result;
         result = initial_value;
 
-        result += (1..n).into_par_iter().map(|i| f(i)).sum::<f64>();
+        result += (start..n).into_par_iter().map(|i| f(i)).sum::<f64>();
 
         if f64::abs(result - prev_result) < eps {
             break;
