@@ -53,6 +53,7 @@ impl Matrix {
     }
 }
 
+#[allow(dead_code)]
 pub fn add(a: &Matrix, b: &Matrix) -> Matrix {
     assert_eq!(a.n(), b.n());
     assert_eq!(a.m(), b.m());
@@ -70,6 +71,7 @@ pub fn add(a: &Matrix, b: &Matrix) -> Matrix {
     Matrix::new(res)
 }
 
+#[allow(dead_code)]
 pub fn sub(a: &Matrix, b: &Matrix) -> Matrix {
     assert_eq!(a.n(), b.n());
     assert_eq!(a.m(), b.m());
@@ -87,6 +89,7 @@ pub fn sub(a: &Matrix, b: &Matrix) -> Matrix {
     Matrix::new(res)
 }
 
+#[allow(dead_code)]
 pub fn mul(a: &Matrix, b: &Matrix) -> Matrix {
     assert_eq!(a.m(), b.n());
 

@@ -1,9 +1,63 @@
 use crate::{
     integration::definite_integral,
+    matrices::{system_solve, Matrix},
     polynomials::chebyshev,
-    utils::{g, lambda, mu_0, sum_calc},
+    utils::{function_calculation, g, lambda, mu_0, sum_calc, surface_static_plot},
+    FunctionType, LoadFunction,
 };
+use clap::Parser;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::f64::consts::PI;
+
+#[derive(Parser)]
+#[clap(rename_all = "snake-case")]
+pub struct Problem3 {
+    #[clap(long)]
+    a: f64,
+    #[clap(long)]
+    b: f64,
+    #[clap(long)]
+    n_x: u32,
+    #[clap(long)]
+    n_y: u32,
+    #[clap(long)]
+    puasson_coef: f64,
+    #[clap(long)]
+    young_modulus: f64,
+    #[clap(long)]
+    eps: f64,
+    #[clap(long)]
+    function_type: FunctionType,
+    #[clap(long)]
+    load_function: LoadFunction,
+}
+
+impl Problem3 {
+    pub fn exec(self) {
+        assert!(self.a < self.b);
+
+        let mu_0 = mu_0(self.puasson_coef);
+        let g = g(self.puasson_coef, self.young_modulus);
+        let lambda = lambda(self.puasson_coef, self.young_modulus);
+
+        let (x, y, z) = match self.function_type {
+            FunctionType::U => {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
+            }
+            FunctionType::V => {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
+            }
+            FunctionType::SigmaX => {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
+            }
+            FunctionType::SigmaY => {
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
+            }
+        };
+
+        surface_static_plot(&x, &y, &z[0]);
+    }
+}
 
 fn h_m(a: f64, m: usize, eps: f64) -> f64 {
     let f = |x| {
@@ -46,15 +100,7 @@ fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
     definite_integral(-1_f64, 1_f64, 100, eps, &f) / coef
 }
 
-fn g_k<F: Fn(f64) -> f64 + Send + Sync>(
-    a: f64,
-    b: f64,
-    mu_0: f64,
-    g: f64,
-    lambda: f64,
-    k: usize,
-    eps: f64,
-) -> f64 {
+fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f64 {
     let f = |x| {
         let a1 = chebyshev(f64::cosh(PI * b / a) * x + 1_f64, k);
         let a2 = f64::sqrt(1_f64 - x * x);
@@ -199,6 +245,7 @@ fn der_psi_1(
     )
 }
 
+#[allow(dead_code)]
 fn psi_2(
     x: f64,
     b: f64,
@@ -229,6 +276,7 @@ fn psi_2(
     )
 }
 
+#[allow(dead_code)]
 fn der_psi_2(
     x: f64,
     b: f64,
@@ -333,6 +381,7 @@ fn coefficients_1(
     )
 }
 
+#[allow(dead_code)]
 fn coefficients_2(
     b: f64,
     alpha: f64,
@@ -376,7 +425,52 @@ fn coefficients_2(
     )
 }
 
-fn unknown_function(x: f64, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> f64 {
+fn phi<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> Matrix {
+    let n = 100;
+    let left: Vec<Vec<_>> = vec![(0..n)
+        .into_par_iter()
+        .map(|m| f_m(a, b, mu_0, g, lambda, load_function, m, eps))
+        .collect()];
+    let a: Vec<Vec<_>> = (0..n)
+        .into_par_iter()
+        .map(|m| {
+            (0..n)
+                .into_par_iter()
+                .map(|k| {
+                    if m == k {
+                        h_m(a, m, eps) * g_k(a, b, mu_0, g, lambda, k, eps)
+                            + PI / 2_f64 / (2_f64 * m as f64 + 1_f64)
+                    } else {
+                        h_m(a, m, eps) * g_k(a, b, mu_0, g, lambda, k, eps)
+                    }
+                })
+                .collect()
+        })
+        .collect();
+
+    system_solve(Matrix::new(a), Matrix::new(left), eps)
+}
+
+#[allow(dead_code)]
+fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
+    x: f64,
+    a: f64,
+    b: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let phi = phi(a, b, mu_0, g, lambda, load_function, eps);
     let h = b - a * f64::acos(f64::cosh(PI * b / a) * x + 1_f64) / PI;
     let a1 = -a * g * (2_f64 * g + lambda) * b * mu_0 * mu_0 * h / (1_f64 + mu_0) / PI;
     let a2 = 2_f64
@@ -384,7 +478,13 @@ fn unknown_function(x: f64, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps:
             (f64::cosh(PI * b / a) * h + 1_f64) * (f64::cosh(PI * b / a) * h + 1_f64) - 1_f64,
         );
     let a3 = f64::sqrt(1_f64 - h * h);
-    let f = |i| chebyshev(f64::cosh(PI * b / a * h + 1_f64), 2 * i + 1);
+    let f = |i| {
+        if i < phi.m() {
+            phi.get_element(0, i) * chebyshev(f64::cosh(PI * b / a * h + 1_f64), 2 * i + 1)
+        } else {
+            0_f64
+        }
+    };
     let a4 = sum_calc(0_f64, &f, eps, 0, 10);
 
     a2 * a4 / a1 / a3
