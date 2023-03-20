@@ -42,10 +42,34 @@ impl Problem3 {
 
         let (x, y, z) = match self.function_type {
             FunctionType::U => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
+                    function_u(
+                        self.a,
+                        self.b,
+                        x,
+                        y,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
             }
             FunctionType::V => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
+                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
+                    function_v(
+                        self.a,
+                        self.b,
+                        x,
+                        y,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
             }
             FunctionType::SigmaX => {
                 function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
@@ -245,7 +269,6 @@ fn der_psi_1(
     )
 }
 
-#[allow(dead_code)]
 fn psi_2(
     x: f64,
     b: f64,
@@ -459,7 +482,6 @@ fn phi<F: Fn(f64) -> f64 + Send + Sync>(
     system_solve(Matrix::new(a), Matrix::new(left), eps)
 }
 
-#[allow(dead_code)]
 fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     x: f64,
     a: f64,
@@ -488,6 +510,132 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     let a4 = sum_calc(0_f64, &f, eps, 0, 10);
 
     a2 * a4 / a1 / a3
+}
+
+fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    y: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+        load_function(x) * f64::cos(alpha * x)
+    });
+    let ((y_psi_1_0, y_psi_2_0, _, __), (y_psi_1_1, y_psi_2_1, _, _)) =
+        psi_2(y, b, alpha, mu_0, g, lambda);
+    let f = |x| {
+        let f_val = unknown_function(x, a, b, mu_0, g, lambda, load_function, eps);
+        let a1 = a * f64::cosh(PI * b / a)
+            / (PI * f64::sinh(f64::acosh(f64::cosh(PI * b / a) * x + 1_f64)));
+        let h = b - a / PI * f64::acosh(f64::cosh(PI * b / a) * x + 1_f64);
+        let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
+            psi_2(h, b, alpha, mu_0, g, lambda);
+        let g1 = if y < h {
+            f64::exp(-alpha * b) * (y_psi_1_0 * h_psi_1_1 + y_psi_2_0 * h_psi_3_1) / alpha / alpha
+        } else {
+            f64::exp(-alpha * b) * (y_psi_1_1 * h_psi_1_0 + y_psi_2_1 * h_psi_3_0) / alpha / alpha
+        };
+
+        a1 * g1 * f_val
+    };
+    let int_val = definite_integral(0_f64, 1_f64 - 1_f64 / f64::cosh(PI * b / a), 20, eps, &f);
+
+    (-1_f64 - mu_0) * f64::sin(alpha * a) * int_val - y_psi_2_0 * pn
+}
+
+fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    y: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+        load_function(x) * f64::cos(alpha * x)
+    });
+    let ((_, _, y_psi_3_0, y_psi_4_0), (_, _, y_psi_3_1, y_psi_4_1)) =
+        psi_2(y, b, alpha, mu_0, g, lambda);
+    let f = |x| {
+        let f_val = unknown_function(x, a, b, mu_0, g, lambda, load_function, eps);
+        let a1 = a * f64::cosh(PI * b / a)
+            / (PI * f64::sinh(f64::acosh(f64::cosh(PI * b / a) * x + 1_f64)));
+        let h = b - a / PI * f64::acosh(f64::cosh(PI * b / a) * x + 1_f64);
+        let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
+            psi_2(h, b, alpha, mu_0, g, lambda);
+        let g3 = if y < h {
+            f64::exp(-alpha * b) * (y_psi_3_0 * h_psi_1_1 + y_psi_4_0 * h_psi_3_1) / alpha / alpha
+        } else {
+            f64::exp(-alpha * b) * (y_psi_3_1 * h_psi_1_0 + y_psi_4_1 * h_psi_3_0) / alpha / alpha
+        };
+
+        a1 * g3 * f_val
+    };
+    let int_val = definite_integral(0_f64, 1_f64 - 1_f64 / f64::cosh(PI * b / a), 20, eps, &f);
+
+    (-1_f64 - mu_0) * f64::sin(alpha * a) * int_val - y_psi_4_0 * pn
+}
+
+fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let initial_value = 0_f64;
+    let n = 10;
+    let start = 1;
+    let f = |i| {
+        if x != a && x != 0_f64 {
+            let alpha = PI / a * (i as f64 - 0.5);
+            2_f64
+                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                * f64::sin(alpha * x)
+                / a
+        } else {
+            0_f64
+        }
+    };
+
+    sum_calc(initial_value, &f, eps, start, n)
+}
+
+fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let initial_value = 0_f64;
+    let n = 10;
+    let start = 1;
+    let f = |i| {
+        let alpha = PI / a * (i as f64 - 0.5);
+        2_f64
+            * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+            * f64::cos(alpha * x)
+            / a
+    };
+
+    sum_calc(initial_value, &f, eps, start, n)
 }
 
 #[cfg(test)]
