@@ -71,12 +71,22 @@ impl Problem3 {
                     )
                 })
             }
-            FunctionType::SigmaX => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
-            }
-            FunctionType::SigmaY => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| todo!())
-            }
+            FunctionType::SigmaX => function_calculation(
+                self.a,
+                self.b,
+                self.n_x,
+                self.n_y,
+                None,
+                |_x, _y, _| todo!(),
+            ),
+            FunctionType::SigmaY => function_calculation(
+                self.a,
+                self.b,
+                self.n_x,
+                self.n_y,
+                None,
+                |_x, _y, _| todo!(),
+            ),
         };
 
         surface_static_plot(&x, &y, &z[0]);
@@ -117,7 +127,7 @@ fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
                 * pn
                 * f64::cos(alpha * x)
         };
-        let a3 = sum_calc(0_f64, &f, eps, 1, 10) / a;
+        let a3 = 2_f64 * sum_calc(0_f64, &f, eps, 1, 10) / a;
         let p = load_function(x);
         a1 * (a3 - p) / a2
     };
@@ -278,15 +288,15 @@ fn psi_2(
     lambda: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
     let e1 = f64::exp(alpha * x);
-    let e2 = f64::exp(-alpha * b);
+    let e2 = f64::exp(alpha * (x - b));
 
     let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
         psi_1(x, b, alpha, mu_0, g, lambda);
 
-    let psi_1_0 = e1 * e2 * psi_1_0 / alpha;
-    let psi_2_0 = e1 * e2 * psi_2_0 / alpha;
-    let psi_3_0 = e1 * e2 * psi_3_0 / alpha;
-    let psi_4_0 = e1 * e2 * psi_4_0 / alpha;
+    let psi_1_0 = e2 * psi_1_0 / alpha;
+    let psi_2_0 = e2 * psi_2_0 / alpha;
+    let psi_3_0 = e2 * psi_3_0 / alpha;
+    let psi_4_0 = e2 * psi_4_0 / alpha;
 
     let psi_1_1 = e1 * psi_1_1;
     let psi_2_1 = alpha * e1 * psi_2_1;
@@ -309,15 +319,16 @@ fn der_psi_2(
     lambda: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
     let e1 = f64::exp(alpha * x);
-    let e2 = f64::exp(-alpha * b);
+    let e2 = f64::exp(alpha * (x - b));
 
     let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
         der_psi_1(x, b, alpha, mu_0, g, lambda);
 
-    let psi_1_0 = e1 * e2 * psi_1_0;
-    let psi_2_0 = e1 * e2 * psi_2_0;
-    let psi_3_0 = e1 * e2 * psi_3_0;
-    let psi_4_0 = e1 * e2 * psi_4_0;
+    println!("der_psi_2, psi_4_0: {psi_4_0}, e2: {e2}");
+    let psi_1_0 = e2 * psi_1_0;
+    let psi_2_0 = e2 * psi_2_0;
+    let psi_3_0 = e2 * psi_3_0;
+    let psi_4_0 = e2 * psi_4_0;
 
     let psi_1_1 = alpha * e1 * psi_1_1;
     let psi_2_1 = alpha * alpha * e1 * psi_2_1;
@@ -457,7 +468,7 @@ fn phi<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> Matrix {
-    let n = 100;
+    let n = 10;
     let left: Vec<Vec<_>> = vec![(0..n)
         .into_par_iter()
         .map(|m| f_m(a, b, mu_0, g, lambda, load_function, m, eps))
@@ -493,6 +504,7 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let phi = phi(a, b, mu_0, g, lambda, load_function, eps);
+
     let h = b - a * f64::acos(f64::cosh(PI * b / a) * x + 1_f64) / PI;
     let a1 = -a * g * (2_f64 * g + lambda) * b * mu_0 * mu_0 * h / (1_f64 + mu_0) / PI;
     let a2 = 2_f64

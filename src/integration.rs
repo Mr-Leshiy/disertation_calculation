@@ -14,7 +14,7 @@ pub fn definite_integral<F: Fn(f64) -> f64 + Send + Sync>(
     let mut prev_result;
 
     let mut result = (0..n)
-        .into_iter()
+        .into_par_iter()
         .map(|i| {
             let x = a + (i as f64) * h;
             f(x)
