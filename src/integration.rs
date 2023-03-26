@@ -1,4 +1,5 @@
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use std::f64::consts::PI;
 
 // calculate a definite integral of the function on the provided interval
 pub fn definite_integral<F: Fn(f64) -> f64 + Send + Sync>(
@@ -45,9 +46,44 @@ pub fn definite_integral<F: Fn(f64) -> f64 + Send + Sync>(
     result
 }
 
+pub fn sqrt_gauss_integral<F: Fn(f64) -> f64 + Send + Sync>(mut n: u32, eps: f64, f: &F) -> f64 {
+    let mut prev_result;
+
+    let mut result = (1..n)
+        .into_par_iter()
+        .map(|i| {
+            let x = f64::cos(PI * (2_f64 * i as f64 - 1_f64) / (2_f64 * n as f64));
+            f(x)
+        })
+        .sum::<f64>()
+        * PI
+        / n as f64;
+
+    loop {
+        n *= 2;
+        prev_result = result;
+
+        result = (1..n)
+            .into_par_iter()
+            .map(|i| {
+                let x = f64::cos(PI * (2_f64 * i as f64 - 1_f64) / (2_f64 * n as f64));
+                f(x)
+            })
+            .sum::<f64>()
+            * PI
+            / n as f64;
+
+        if f64::abs(result - prev_result) < eps {
+            break;
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::polynomials::chebyshev;
 
     #[test]
     fn test_integration() {
@@ -71,5 +107,23 @@ mod tests {
             "result, {}",
             definite_integral(0_f64, 2_f64, 10, eps, &|x| f64::sin(x) * 5_f64)
         );
+    }
+
+    #[test]
+    fn spectral_relation_test() {
+        let x = 2.0;
+        let x = f64::cos(PI / 2.0 * x);
+        let m = 2;
+        let eps = 0.001;
+
+        let f = |y| {
+            let cheb1 = chebyshev(y, 2 * m + 1);
+            let log = f64::ln(f64::abs((x + y) / (x - y)));
+            cheb1 * log
+        };
+
+        let right = sqrt_gauss_integral(10, eps, &f) / std::f64::consts::PI / 2_f64;
+        let left = chebyshev(x, 2 * m + 1) / (2_f64 * m as f64 + 1_f64);
+        println!("right: {right}, left: {left}");
     }
 }
