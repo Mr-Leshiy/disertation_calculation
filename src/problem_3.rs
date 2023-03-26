@@ -1,5 +1,5 @@
 use crate::{
-    integration::definite_integral,
+    integration::{definite_integral, sqrt_gauss_integral},
     matrices::{system_solve, Matrix},
     polynomials::chebyshev,
     utils::{function_calculation, g, lambda, mu_0, sum_calc, surface_static_plot},
@@ -94,81 +94,20 @@ impl Problem3 {
 }
 
 fn h_m(a: f64, m: usize, eps: f64) -> f64 {
-    let f = |x| {
-        let a1 = chebyshev(f64::cos(x * PI / (2_f64 * a)), 2 * m + 1);
-        let a2 = f64::sqrt(1_f64 - x * x);
-        a1 / a2
-    };
-    definite_integral(-1_f64, 1_f64, 100, eps, &f)
-}
-
-fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
-    a: f64,
-    b: f64,
-    mu_0: f64,
-    g: f64,
-    lambda: f64,
-    load_function: &F,
-    m: usize,
-    eps: f64,
-) -> f64 {
-    let coef = a * (f64::cosh(b * PI / a) - 1_f64);
-    let f = |x| {
-        let a1 = chebyshev(f64::cos(x * PI / (2_f64 * a)), 2 * m + 1);
-        let a2 = f64::sqrt(1_f64 - x * x);
-        let f = |i| {
-            let alpha = PI / a * (i as f64 - 0.5);
-            let pn = definite_integral(0_f64, a, 100, eps, &|x| {
-                load_function(x) * f64::cos(alpha * x)
-            });
-            let ((_, psi_2_0, _, _), (_, _, _, _)) = psi_1(b, b, alpha, mu_0, g, lambda);
-            let ((_, _, _, der_psi_4_0), (_, _, _, _)) = der_psi_1(b, b, alpha, mu_0, g, lambda);
-            ((2_f64 * g + lambda) * der_psi_4_0 + lambda * psi_2_0 / alpha)
-                * pn
-                * f64::cos(alpha * x)
-        };
-        let a3 = 2_f64 * sum_calc(0_f64, &f, eps, 1, 10) / a;
-        let p = load_function(x);
-        a1 * (a3 - p) / a2
-    };
-    definite_integral(-1_f64, 1_f64, 100, eps, &f) / coef
+    let f = |x| chebyshev(x, 2 * m + 1);
+    sqrt_gauss_integral(10, eps, &f)
 }
 
 fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f64 {
     let f = |x| {
-        let a1 = chebyshev(f64::cosh(PI * b / a) * x + 1_f64, k);
-        let a2 = f64::sqrt(1_f64 - x * x);
-
-        let h = b - a * f64::acos(f64::cosh(PI * b / a) * x + 1_f64) / PI;
-        let a3 = -a * g * (2_f64 * g + lambda) * b * mu_0 * mu_0 * h / (1_f64 + mu_0) / PI;
-        let f1 = |i| {
-            let alpha = PI / a * (i as f64 - 0.5);
-            let ((_, _, _, _), (b_psi_1_1, b_psi_2_1, _, _)) = psi_1(x, b, alpha, mu_0, g, lambda);
-            let ((_, _, _, _), (_, _, b_der_psi_3_1, b_der_psi_4_1)) =
-                der_psi_1(x, b, alpha, mu_0, g, lambda);
-            let ((h_psi_1_0, _, h_psi_3_0, _), (__, _, _, _)) = psi_1(h, b, alpha, mu_0, g, lambda);
-
-            let a1 = f64::sin(alpha * (x + a)) + f64::sin(alpha * (a - x));
-            let a2 = (2_f64 * g) * (b_der_psi_3_1 * h_psi_1_0 / alpha + b_der_psi_4_1 * h_psi_3_0)
-                + lambda * (b_psi_1_1 * h_psi_1_0 / alpha / alpha + b_psi_2_1 * h_psi_3_0 / alpha);
-
-            f64::exp(h - b) * a1 * a2 / alpha
-        };
-        let f2 = |i| {
-            let i = i as f64;
-
-            let a1 = f64::sin((2_f64 * i + 1_f64) * (PI / a / 2_f64) * (x + a))
-                + f64::sin((2_f64 * i + 1_f64) * (PI / a / 2_f64) * (a - x));
-
-            f64::exp((2_f64 * i + 1_f64) * (PI / a / 2_f64) * (h - b)) * a1 / (2_f64 * i + 1_f64)
-        };
-        let a4_1 = sum_calc(0_f64, &f1, eps, 1, 10);
-        let a4_2 = sum_calc(0_f64, &f2, eps, 0, 10);
-        let a4 = a4_1 - a3 * a4_2;
-
-        2_f64 * a1 * a4 / a2 / a3
+        let cheb = chebyshev(x, 2 * k + 1);
+        let h =
+            b - 2_f64 * a / PI * f64::acosh(x * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
+        let a1 = -2_f64 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
+        let a2 = 1_f64;
+        a2 / a1 * cheb
     };
-    definite_integral(-1_f64, 1_f64, 100, eps, &f) / PI
+    sqrt_gauss_integral(10, eps, &f) / PI / 2_f64
 }
 
 fn psi_1(
@@ -324,7 +263,6 @@ fn der_psi_2(
     let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
         der_psi_1(x, b, alpha, mu_0, g, lambda);
 
-    println!("der_psi_2, psi_4_0: {psi_4_0}, e2: {e2}");
     let psi_1_0 = e2 * psi_1_0;
     let psi_2_0 = e2 * psi_2_0;
     let psi_3_0 = e2 * psi_3_0;
@@ -459,20 +397,10 @@ fn coefficients_2(
     )
 }
 
-fn phi<F: Fn(f64) -> f64 + Send + Sync>(
-    a: f64,
-    b: f64,
-    mu_0: f64,
-    g: f64,
-    lambda: f64,
-    load_function: &F,
-    eps: f64,
-) -> Matrix {
+fn phi(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> Matrix {
     let n = 10;
-    let left: Vec<Vec<_>> = vec![(0..n)
-        .into_par_iter()
-        .map(|m| f_m(a, b, mu_0, g, lambda, load_function, m, eps))
-        .collect()];
+    // zeros
+    let left: Vec<Vec<_>> = vec![vec![0_f64; n]];
     let a: Vec<Vec<_>> = (0..n)
         .into_par_iter()
         .map(|m| {
@@ -493,17 +421,8 @@ fn phi<F: Fn(f64) -> f64 + Send + Sync>(
     system_solve(Matrix::new(a), Matrix::new(left), eps)
 }
 
-fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
-    x: f64,
-    a: f64,
-    b: f64,
-    mu_0: f64,
-    g: f64,
-    lambda: f64,
-    load_function: &F,
-    eps: f64,
-) -> f64 {
-    let phi = phi(a, b, mu_0, g, lambda, load_function, eps);
+fn unknown_function(x: f64, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> f64 {
+    let phi = phi(a, b, mu_0, g, lambda, eps);
 
     let h = b - a * f64::acos(f64::cosh(PI * b / a) * x + 1_f64) / PI;
     let a1 = -a * g * (2_f64 * g + lambda) * b * mu_0 * mu_0 * h / (1_f64 + mu_0) / PI;
@@ -541,10 +460,13 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     let ((y_psi_1_0, y_psi_2_0, _, __), (y_psi_1_1, y_psi_2_1, _, _)) =
         psi_2(y, b, alpha, mu_0, g, lambda);
     let f = |x| {
-        let f_val = unknown_function(x, a, b, mu_0, g, lambda, load_function, eps);
-        let a1 = a * f64::cosh(PI * b / a)
-            / (PI * f64::sinh(f64::acosh(f64::cosh(PI * b / a) * x + 1_f64)));
-        let h = b - a / PI * f64::acosh(f64::cosh(PI * b / a) * x + 1_f64);
+        let f_val = unknown_function(x, a, b, mu_0, g, lambda, eps);
+        let a1 = 1_f64
+            / f64::sinh(f64::acosh(
+                x * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64,
+            ));
+        let h =
+            b - 2_f64 * a / PI * f64::acosh(x * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
         let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g1 = if y < h {
@@ -555,9 +477,11 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
 
         a1 * g1 * f_val
     };
-    let int_val = definite_integral(0_f64, 1_f64 - 1_f64 / f64::cosh(PI * b / a), 20, eps, &f);
+    let int_val = definite_integral(0_f64, 1_f64, 20, eps, &f);
+    let coef =
+        (-1_f64 - mu_0) * f64::sin(alpha * a) * 2_f64 * a * f64::cosh(PI * b / (2_f64 * a)) / PI;
 
-    (-1_f64 - mu_0) * f64::sin(alpha * a) * int_val - y_psi_2_0 * pn
+    coef * int_val - y_psi_2_0 * pn
 }
 
 fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
@@ -577,10 +501,13 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     let ((_, _, y_psi_3_0, y_psi_4_0), (_, _, y_psi_3_1, y_psi_4_1)) =
         psi_2(y, b, alpha, mu_0, g, lambda);
     let f = |x| {
-        let f_val = unknown_function(x, a, b, mu_0, g, lambda, load_function, eps);
-        let a1 = a * f64::cosh(PI * b / a)
-            / (PI * f64::sinh(f64::acosh(f64::cosh(PI * b / a) * x + 1_f64)));
-        let h = b - a / PI * f64::acosh(f64::cosh(PI * b / a) * x + 1_f64);
+        let f_val = unknown_function(x, a, b, mu_0, g, lambda, eps);
+        let a1 = 1_f64
+            / f64::sinh(f64::acosh(
+                x * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64,
+            ));
+        let h =
+            b - 2_f64 * a / PI * f64::acosh(x * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
         let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g3 = if y < h {
@@ -591,9 +518,11 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
 
         a1 * g3 * f_val
     };
-    let int_val = definite_integral(0_f64, 1_f64 - 1_f64 / f64::cosh(PI * b / a), 20, eps, &f);
+    let int_val = definite_integral(0_f64, 1_f64, 20, eps, &f);
+    let coef =
+        (-1_f64 - mu_0) * f64::sin(alpha * a) * 2_f64 * a * f64::cosh(PI * b / (2_f64 * a)) / PI;
 
-    (-1_f64 - mu_0) * f64::sin(alpha * a) * int_val - y_psi_4_0 * pn
+    coef * int_val * int_val - y_psi_4_0 * pn
 }
 
 fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
