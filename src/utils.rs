@@ -1,6 +1,5 @@
-use std::{env::current_dir, fs::File, io::Write, process::Command};
-
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use std::{env::current_dir, fs::File, io::Write, process::Command};
 
 // calculate Lamme's coefficient G value
 pub fn g(puasson_coef: f64, young_modulus: f64) -> f64 {
@@ -25,14 +24,14 @@ pub fn sum_calc<F: Fn(usize) -> f64 + Send + Sync>(
     let mut result = initial_value;
     let mut prev_result;
 
-    result += (start..n).into_iter().map(|i| f(i)).sum::<f64>();
+    result += (start..n).into_par_iter().map(|i| f(i)).sum::<f64>();
 
     loop {
         n *= 2;
         prev_result = result;
         result = initial_value;
 
-        result += (start..n).into_iter().map(|i| f(i)).sum::<f64>();
+        result += (start..n).into_par_iter().map(|i| f(i)).sum::<f64>();
 
         if f64::abs(result - prev_result) < eps {
             break;
@@ -56,9 +55,9 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     let h_t = t / n_t as f64;
 
     println!("Calculating ...");
-    let x: Vec<_> = (0..n_x).into_iter().map(|i| i as f64 * h_x).collect();
-    let y: Vec<_> = (0..n_y).into_iter().map(|i| i as f64 * h_y).collect();
-    let t: Vec<_> = (0..n_t).into_iter().map(|i| i as f64 * h_t).collect();
+    let x: Vec<_> = (0..n_x).into_par_iter().map(|i| i as f64 * h_x).collect();
+    let y: Vec<_> = (0..n_y).into_par_iter().map(|i| i as f64 * h_y).collect();
+    let t: Vec<_> = (0..n_t).into_par_iter().map(|i| i as f64 * h_t).collect();
 
     let z = t
         .into_par_iter()

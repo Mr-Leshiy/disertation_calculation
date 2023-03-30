@@ -100,9 +100,10 @@ fn h_m(m: usize, eps: f64) -> f64 {
 
 fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f64 {
     let f = |x| {
-        let cheb = chebyshev(x, 2 * k + 1);
+        let x1 = (x + 1_f64) / 2_f64;
+        let cheb = chebyshev(x1, 2 * k + 1);
         let h =
-            b - 2_f64 * a / PI * f64::acosh(x * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
+            b - 2_f64 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
 
         let a1 = -2_f64 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
 
@@ -134,9 +135,12 @@ fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f6
 
         let a2 = a2_1 + a2_2;
 
-        a2 / a1 * cheb
+        let sqrt1 = f64::sqrt(1_f64 - x * x);
+        let sqrt2 = f64::sqrt(1_f64 - x1 * x1);
+
+        (sqrt1 / sqrt2) * (a2 / a1) * cheb
     };
-    sqrt_gauss_integral(10, eps, &f) / PI / 2_f64
+    sqrt_gauss_integral(10, eps, &f) / PI
 }
 
 fn psi_1(
@@ -430,18 +434,24 @@ fn phi(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> Matrix {
     let n = 100;
     // zeros
     let left: Vec<Vec<_>> = vec![vec![0_f64; n]];
+
+    let g_k: Vec<_> = (0..n)
+        .into_par_iter()
+        .map(|k| g_k(a, b, mu_0, g, lambda, k, eps))
+        .collect();
+    let h_m: Vec<_> = (0..n).into_par_iter().map(|m| h_m(m, eps)).collect();
+
     let a: Vec<Vec<_>> = (0..n)
         .into_par_iter()
         .map(|m| {
-            let h_m = h_m(m, eps);
+            let h_m = h_m[m];
             (0..n)
                 .into_par_iter()
                 .map(|k| {
                     if m == k {
-                        h_m * g_k(a, b, mu_0, g, lambda, k, eps)
-                            + PI / 8_f64 / (2_f64 * m as f64 + 1_f64)
+                        h_m * g_k[k] + PI / 8_f64 / (2_f64 * m as f64 + 1_f64)
                     } else {
-                        h_m * g_k(a, b, mu_0, g, lambda, k, eps)
+                        h_m * g_k[k]
                     }
                 })
                 .collect()

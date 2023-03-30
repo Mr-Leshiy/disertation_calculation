@@ -1,4 +1,4 @@
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+// use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::f64::consts::PI;
 
 // calculate a definite integral of the function on the provided interval
@@ -15,7 +15,7 @@ pub fn definite_integral<F: Fn(f64) -> f64 + Send + Sync>(
     let mut prev_result;
 
     let mut result = (0..n)
-        .into_par_iter()
+        .into_iter()
         .map(|i| {
             let x = a + (i as f64) * h;
             f(x)
@@ -30,7 +30,7 @@ pub fn definite_integral<F: Fn(f64) -> f64 + Send + Sync>(
         prev_result = result;
 
         result = (0..n)
-            .into_par_iter()
+            .into_iter()
             .map(|i| {
                 let x = a + (i as f64) * h;
                 f(x)
@@ -50,7 +50,7 @@ pub fn sqrt_gauss_integral<F: Fn(f64) -> f64 + Send + Sync>(mut n: u32, eps: f64
     let mut prev_result;
 
     let mut result = (1..n)
-        .into_par_iter()
+        .into_iter()
         .map(|i| {
             let x = f64::cos(PI * (2_f64 * i as f64 - 1_f64) / (2_f64 * n as f64));
             f(x)
@@ -64,7 +64,7 @@ pub fn sqrt_gauss_integral<F: Fn(f64) -> f64 + Send + Sync>(mut n: u32, eps: f64
         prev_result = result;
 
         result = (1..n)
-            .into_par_iter()
+            .into_iter()
             .map(|i| {
                 let x = f64::cos(PI * (2_f64 * i as f64 - 1_f64) / (2_f64 * n as f64));
                 f(x)
