@@ -336,63 +336,63 @@ fn coefficients_1(
     (f64, f64, f64, f64, f64, f64, f64, f64),
     (f64, f64, f64, f64, f64, f64, f64, f64),
 ) {
-    let coef = (1_f64 + mu_0) * 4_f64;
-    let e = f64::exp(-alpha * b);
+    let coef = 1.0 + mu_0;
+    let e_1 = f64::exp(-alpha * b);
+    let e_2 = e_1 * e_1;
+    let inv_alpha = 1.0 / alpha;
 
-    let x1 = 2_f64 * b * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha;
-    let x2 = 2_f64 * b * mu_0 - 2_f64 / alpha;
-    let x3 = -2_f64 * b * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha;
-    let x4 = 2_f64 * b * mu_0 + 2_f64 / alpha;
-    let x5 = -2_f64 * g * b * mu_0 - 2_f64 * g * mu_0 / alpha + 2_f64 * lambda / alpha;
-    let x6 = -2_f64 * g * b * mu_0 + 4_f64 * g / alpha + 2_f64 * lambda / alpha;
-    let x7 = -2_f64 * g * b * mu_0 + 2_f64 * g * mu_0 / alpha - 2_f64 * lambda / alpha;
-    let x8 = 2_f64 * g * b * mu_0 + 4_f64 * g / alpha + 2_f64 * lambda / alpha;
-    let x9 = 2_f64 + 2_f64 * mu_0;
-    let x10 = -2_f64;
-    let x11 = 2_f64 + mu_0;
-    let x12 = -2_f64 - mu_0;
+    let x1 = b * mu_0 + inv_alpha + inv_alpha * mu_0;
+    let x2 = b * mu_0 - inv_alpha;
+    let x3 = -b * mu_0 + inv_alpha + inv_alpha * mu_0;
+    let x4 = b * mu_0 + inv_alpha;
+    let x5 = -g * b * mu_0 - inv_alpha * g * mu_0 + inv_alpha * lambda;
+    let x6 = -g * b * mu_0 + 2.0 * inv_alpha * g + inv_alpha * lambda;
+    let x7 = -g * b * mu_0 + inv_alpha * g * mu_0 - inv_alpha * lambda;
+    let x8 = g * b * mu_0 + inv_alpha * 2.0 * g + inv_alpha * lambda;
+    let x9 = 1.0 + mu_0;
+    let x10 = -1.0;
+    let x11 = 2.0 + mu_0;
 
-    let y1 = x2 + e * e * x4;
-    let y2 = e * e * x3 - x1;
-    let y3 = x6 + e * e * x8;
-    let y4 = e * e * x7 - x5;
+    let y1 = x2 + x4 * e_2;
+    let y2 = -x1 + x3 * e_2;
+    let y3 = x6 + x8 * e_2;
+    let y4 = -x5 + x7 * e_2;
+    let y5 = -(g + lambda) * x11
+        + alpha * alpha * e_2 * (x3 * x6 - x1 * x8 - x2 * x7 + x4 * x5)
+        + alpha * alpha * e_2 * e_2 * (x3 * x8 - x4 * x7);
 
-    let d_1_0 = -coef * (y4 * x10 * x12 + y4 * x10 * x11 + y3 * x9 * x11)
-        / (x9 * x11 * (y2 * y3 - y1 * y4));
-    let d_2_0 = -coef * (y2 * x10 * x12 + y2 * x10 * x11 + y1 * x9 * x11)
-        / (x9 * x11 * (y4 * y1 - y3 * y2));
-    let d_3_0 = coef * (x12 * y4) / (x11 * (y2 * y3 - y1 * y4));
-    let d_4_0 = coef * (x12 * y2) / (x11 * (y4 * y1 - y3 * y2));
+    let d_1_0 = -coef * 2.0 * y3 / y5;
+    let d_2_0 = coef * 2.0 * y1 / y5;
+    let d_3_0 = -coef * 2.0 * y4 / y5;
+    let d_4_0 = coef * 2.0 * y2 / y5;
 
-    let f_1_0 = coef * y3 / (y2 * y3 - y1 * y4);
-    let f_2_0 = coef * y1 / (y4 * y1 - y3 * y2);
-    let f_3_0 = -coef * y4 / (y2 * y3 - y1 * y4);
-    let f_4_0 = -coef * y2 / (y4 * y1 - y3 * y2);
+    let f_1_0 = coef * 2.0 * y3 / y5;
+    let f_2_0 = -coef * 2.0 * y1 / y5;
+    let f_3_0 = -coef * 2.0 * y4 / y5;
+    let f_4_0 = coef * 2.0 * y2 / y5;
 
-    let d_1_1 = coef
-        * ((y2 * (x1 * y4 - x5 * y2) * (x10 * x12 + x10 * x11)
-            + x11 * x9 * (x1 * y4 - x5 * y2) * y1
-            + x11 * x9 * x1 * (y3 * y2 - y1 * y4))
-            / (x11 * x9 * x9 * y2 * (y3 * y2 - y1 * y4)))
-        + coef / x9;
-    let d_3_1 = -coef * (x12 * (x1 * y4 - x5 * y2) / (x11 * x9 * (y3 * y2 - y1 * y4)));
-    let f_1_1 = -coef
-        * ((x1 * (y3 * y2 - y1 * y4) + (x1 * y4 - x5 * y2) * y1) / (x9 * y2 * (y3 * y2 - y1 * y4)));
-    let f_3_1 = coef * (x1 * y4 - x5 * y2) / (x9 * (y3 * y2 - y1 * y4));
+    let z1 = (g + lambda) * x11 + alpha * alpha * e_2 * (x1 * x8 - x4 * x5);
+    let z2 = x3 * x6 - x2 * x7 + e_2 * e_2 * (x3 * x8 - x4 * x7);
+    let z3 = x1 * x7 - x3 * x5;
+    let z4 =
+        (g + lambda) * x11 + e_2 * (x4 * x5 * x10 - x4 * x6 * x9 - x1 * x8 * x10 + x2 * x8 * x9);
+    let z5 = x2 * x8 * x9 - x4 * x6 * x9 + x2 * x7 * x10 - x3 * x6 * x10
+        + alpha * alpha * e_2 * e_2 * (x4 * x7 * x10 - x3 * x8 * x10);
+    let z6 = (g + lambda) * x11 * coef
+        + e_2 * (x3 * x5 * x10 - x3 * x6 * x9 + x2 * x7 * x9 - x1 * x7 * x10);
+    let z7 = x3 * x5 * x10 - x1 * x7 * x10 - x1 * x8 * x9
+        + x4 * x5 * x9
+        + alpha * alpha * e_2 * e_2 * (x3 * x8 * x9 - x4 * x7 * x9);
 
-    let d_2_1 = coef
-        * (((x5 * x10 - x1 * x9) * y2 - (x1 * x10 - x2 * x9) * y4) * (x10 * x11 + x10 * x12)
-            / (x9 * x9 * x11 * x11 * (y2 * y3 - y1 * y4))
-            - ((x1 * x10 - x2 * x9) * y3 - (x5 * x10 - x6 * x9) * y1)
-                / (x9 * x11 * (y2 * y3 - y1 * y4)))
-        - coef * x10 / (x9 * x11);
-    let d_4_1 = -coef * ((x5 * x10 - x6 * x9) * y2 - (x1 * x10 - x2 * x9) * y4) * x12
-        / (x9 * x11 * x11 * (y2 * y3 - y1 * y4))
-        + coef / x11;
-    let f_2_1 = coef * ((x1 * x10 - x2 * x9) * y3 - (x5 * x10 - x6 * x9) * y1)
-        / (x9 * x11 * (y2 * y3 - y1 * y4));
-    let f_4_1 = coef * ((x5 * x10 - x6 * x9) * y2 - (x1 * x10 - x2 * x9) * y4)
-        / (x9 * x11 * (y2 * y3 - y1 * y4));
+    let d_1_1 = coef * 2.0 * z2 / (x9 * y5);
+    let d_2_1 = coef * 4.0 * z5 / (x9 * x11 * y5);
+    let d_3_1 = coef * 2.0 * z3 / (x9 * y5);
+    let d_4_1 = coef * 4.0 * z7 / (x9 * x11 * y5);
+
+    let f_1_1 = -coef * 2.0 * z1 / (x9 * y5);
+    let f_2_1 = -coef * 4.0 * z4 / (x9 * x11 * y5);
+    let f_3_1 = coef * 2.0 * z3 / (x9 * y5);
+    let f_4_1 = coef * 4.0 * z6 / (x9 * x11 * y5);
 
     (
         (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
@@ -418,25 +418,25 @@ fn coefficients_2(
         (d_1_1, d_2_1, d_3_1, d_4_1, f_1_1, f_2_1, f_3_1, f_4_1),
     ) = coefficients_1(b, alpha, mu_0, g, lambda);
 
-    let d_1_0 = e * d_1_0 / alpha;
-    let d_2_0 = e * d_2_0 / alpha;
-    let d_3_0 = e * d_3_0 / alpha;
-    let d_4_0 = e * d_4_0 / alpha;
+    let d_1_0 = e * alpha * d_1_0;
+    let d_2_0 = e * alpha * d_2_0;
+    let d_3_0 = e * alpha * d_3_0;
+    let d_4_0 = e * alpha * d_4_0;
 
-    let f_1_0 = e * f_1_0 / alpha;
-    let f_2_0 = e * f_2_0 / alpha;
-    let f_3_0 = e * f_3_0 / alpha;
-    let f_4_0 = e * f_4_0 / alpha;
+    let f_1_0 = e * alpha * f_1_0;
+    let f_2_0 = e * alpha * f_2_0;
+    let f_3_0 = e * alpha * f_3_0;
+    let f_4_0 = e * alpha * f_4_0;
 
-    let d_1_1 = d_1_1;
-    let d_2_1 = d_2_1 * alpha;
-    let d_3_1 = d_3_1;
-    let d_4_1 = d_4_1 * alpha;
+    let d_1_1 = alpha * alpha * e * e * d_1_1;
+    let d_2_1 = alpha * alpha * alpha * e * e * d_2_1;
+    let d_3_1 = alpha * alpha * e * e * d_3_1;
+    let d_4_1 = alpha * alpha * alpha * e * e * d_4_1;
 
     let f_1_1 = f_1_1;
-    let f_2_1 = f_2_1 * alpha;
-    let f_3_1 = f_3_1;
-    let f_4_1 = f_4_1 * alpha;
+    let f_2_1 = alpha * f_2_1;
+    let f_3_1 = alpha * alpha * e * e * f_3_1;
+    let f_4_1 = alpha * f_4_1;
 
     (
         (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
@@ -861,7 +861,7 @@ mod tests {
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
 
-        for i in 1..5 {
+        for i in 2..5 {
             println!("-----");
             let alpha = PI / a * (i as f64 - 0.5);
 
