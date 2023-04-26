@@ -114,36 +114,35 @@ fn h_m(m: usize, eps: f64) -> f64 {
 
 fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f64 {
     let f = |x| {
-        let x1 = (x + 1_f64) / 2_f64;
+        let x1 = (x + 1_f64) / 2.0;
         let cheb = chebyshev(x1, 2 * k + 1);
-        let h =
-            b - 2_f64 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
+        let h = b - 2.0 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64);
 
-        let a1 = -2_f64 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
+        let a1 = -2.0 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
 
         let f2_1 = |n| {
             let alpha = PI / a * (n as f64 - 0.5);
             let exp = f64::exp(-alpha * (b - h));
             // approximation of sin(alpha(a + x)) + sin(alpha(a - x))
-            let sin = 2_f64;
+            let sin = 2.0;
 
             let ((h_psi_1_0, _, h_psi_3_0, _), (_, _, _, _)) = psi_1(h, b, alpha, mu_0, g, lambda);
             let ((_, _, _, _), (b_psi_1_1, b_psi_2_1, _, _)) = psi_1(b, b, alpha, mu_0, g, lambda);
             let ((_, _, _, _), (_, _, b_der_psi_3_1, b_der_psi_4_1)) =
                 der_psi_1(b, b, alpha, mu_0, g, lambda);
 
-            let sum = (2_f64 * g + lambda)
+            let sum = (2.0 * g + lambda)
                 * (b_der_psi_3_1 * h_psi_1_0 / alpha + b_der_psi_4_1 * h_psi_3_0)
                 + lambda * (b_psi_1_1 * h_psi_1_0 / alpha + b_psi_2_1 * h_psi_3_0);
 
             exp * sin * sum / alpha
         };
-        let a2_1 = sum_calc(0_f64, &f2_1, eps, 0, 100) / 2_f64;
+        let a2_1 = sum_calc(0_f64, &f2_1, eps, 0, 100) / 2.0;
         let f2_2 = |n| {
             let n = n as f64;
-            let exp = f64::exp(-(2_f64 * n + 1_f64) * PI / (2_f64 * a) * (b - h));
+            let exp = f64::exp(-(2.0 * n + 1_f64) * PI / (2.0 * a) * (b - h));
 
-            exp / (2_f64 * n + 1_f64)
+            exp / (2.0 * n + 1_f64)
         };
         let a2_2 = -a1 * sum_calc(0_f64, &f2_2, eps, 0, 100);
 
@@ -154,7 +153,7 @@ fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f6
 
         (sqrt1 / sqrt2) * (a2 / a1) * cheb
     };
-    sqrt_gauss_integral(10, eps, &f) / PI / 2_f64
+    sqrt_gauss_integral(10, eps, &f) / PI / 2.0
 }
 
 fn psi_1(
@@ -166,30 +165,41 @@ fn psi_1(
     lambda: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
     let coef = (1_f64 + mu_0) * 4_f64;
-    let e = f64::exp(-2_f64 * alpha * x);
+    let e1: f64 = f64::exp(-2.0 * alpha * x);
+    let e2 = f64::exp(2.0 * alpha * x);
+    let e3 = f64::exp(-2.0 * alpha * b);
 
     let (
         (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
         (d_1_1, d_2_1, d_3_1, d_4_1, f_1_1, f_2_1, f_3_1, f_4_1),
     ) = coefficients_1(b, alpha, mu_0, g, lambda);
 
-    let psi_1_0 = ((x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_1_0 + x * mu_0 * d_3_0)
-        + e * ((x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_1_0 - x * mu_0 * f_3_0);
-    let psi_2_0 = ((x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_2_0 + x * mu_0 * d_4_0)
-        + e * ((x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_2_0 - x * mu_0 * f_4_0);
-    let psi_3_0 = (-x * mu_0 * d_1_0 + (-x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_3_0)
-        + e * (x * mu_0 * f_1_0 + (-x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_3_0);
-    let psi_4_0 = (-x * mu_0 * d_2_0 + (-x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_4_0)
-        + e * (x * mu_0 * f_2_0 + (-x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_4_0);
+    let psi_1_0 = ((x * alpha * mu_0 + 2.0 + mu_0) * d_1_0 + x * alpha * mu_0 * d_3_0)
+        + e1 * ((x * alpha * mu_0 - 2.0 - mu_0) * f_1_0 - x * alpha * mu_0 * f_3_0);
+    let psi_2_0 = ((x * alpha * mu_0 + 2.0 + mu_0) * d_2_0 + x * alpha * mu_0 * d_4_0)
+        + e1 * ((x * alpha * mu_0 - 2.0 - mu_0) * f_2_0 - x * alpha * mu_0 * f_4_0);
+    let psi_3_0 = (-x * alpha * mu_0 * d_1_0 + (-x * alpha * mu_0 + 2.0 + mu_0) * d_3_0)
+        + e1 * (x * alpha * mu_0 * f_1_0 + (-x * alpha * mu_0 - 2.0 - mu_0) * f_3_0);
+    let psi_4_0 = (-x * alpha * mu_0 * d_2_0 + (-x * alpha * mu_0 + 2.0 + mu_0) * d_4_0)
+        + e1 * (x * alpha * mu_0 * f_2_0 + (-x * alpha * mu_0 - 2.0 - mu_0) * f_4_0);
 
-    let psi_1_1 = ((x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_1_1 + x * mu_0 * d_3_1)
-        + e * ((x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_1_1 - x * mu_0 * f_3_1);
-    let psi_2_1 = ((x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_2_1 + x * mu_0 * d_4_1)
-        + e * ((x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_2_1 - x * mu_0 * f_4_1);
-    let psi_3_1 = (-x * mu_0 * d_1_1 + (-x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_3_1)
-        + e * (x * mu_0 * f_1_1 + (-x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_3_1);
-    let psi_4_1 = (-x * mu_0 * d_2_1 + (-x * mu_0 + 2_f64 / alpha + mu_0 / alpha) * d_4_1)
-        + e * (x * mu_0 * f_2_1 + (-x * mu_0 - 2_f64 / alpha - mu_0 / alpha) * f_4_1);
+    let psi_1_1 = (x * mu_0 - 2.0 / alpha - mu_0 / alpha) * f_1_1
+        + e2 * e3
+            * ((x * alpha * mu_0 + 2.0 + mu_0) * alpha * d_1_1 + x * alpha * mu_0 * alpha * d_3_1)
+        + e3 * (-x * alpha * mu_0 * alpha * f_3_1);
+    let psi_2_1 = (x * mu_0 - 2.0 / alpha - mu_0 / alpha) * f_2_1 - x * mu_0 * f_4_1
+        + e2 * e3
+            * ((x * alpha * mu_0 + 2.0 + mu_0) * alpha * d_2_1 + x * alpha * alpha * mu_0 * d_4_1);
+    let psi_3_1 = -x * mu_0 * f_1_1
+        + e2 * e3
+            * (-x * alpha * alpha * mu_0 * d_1_1
+                + (-x * alpha * mu_0 + 2.0 + mu_0) * alpha * d_3_1)
+        + e3 * (-x * alpha * mu_0 - 2.0 - mu_0) * alpha * f_3_1;
+    let psi_4_1 = x * mu_0 * f_2_1
+        + (-x * mu_0 - 2.0 / alpha - mu_0 / alpha) * f_4_1
+        + e2 * e3
+            * (-x * alpha * alpha * mu_0 * d_2_1
+                + (-x * alpha * mu_0 + 2.0 + mu_0) * alpha * d_4_1);
 
     (
         (
@@ -216,38 +226,45 @@ fn der_psi_1(
     lambda: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
     let coef = (1_f64 + mu_0) * 4_f64;
-    let e = f64::exp(-2_f64 * alpha * x);
+    let e1: f64 = f64::exp(-2.0 * alpha * x);
+    let e2 = f64::exp(2.0 * alpha * x);
+    let e3 = f64::exp(-2.0 * alpha * b);
 
     let (
         (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
         (d_1_1, d_2_1, d_3_1, d_4_1, f_1_1, f_2_1, f_3_1, f_4_1),
     ) = coefficients_1(b, alpha, mu_0, g, lambda);
 
-    let psi_1_0 = ((x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * d_1_0
-        + (x * mu_0 + mu_0 / alpha) * d_3_0)
-        + e * ((-x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * f_1_0
-            + (x * mu_0 - mu_0 / alpha) * f_3_0);
-    let psi_2_0 = ((x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * d_2_0
-        + (x * mu_0 + mu_0 / alpha) * d_4_0)
-        + e * ((-x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * f_2_0
-            + (x * mu_0 - mu_0 / alpha) * f_4_0);
-    let psi_3_0 = ((-x * mu_0 - mu_0 / alpha) * d_1_0 + (-x * mu_0 + 2_f64 / alpha) * d_3_0)
-        + e * ((-x * mu_0 + mu_0 / alpha) * f_1_0 + (x * mu_0 + 2_f64 / alpha) * f_3_0);
-    let psi_4_0 = ((-x * mu_0 - mu_0 / alpha) * d_2_0 + (-x * mu_0 + 2_f64 / alpha) * d_4_0)
-        + e * ((-x * mu_0 + mu_0 / alpha) * f_2_0 + (x * mu_0 + 2_f64 / alpha) * f_4_0);
+    let psi_1_0 = ((x * alpha * mu_0 + 2.0 + 2.0 * mu_0) * d_1_0
+        + (x * alpha * mu_0 + mu_0) * d_3_0)
+        + e1 * ((-x * alpha * mu_0 + 2.0 + 2.0 * mu_0) * f_1_0 + (x * alpha * mu_0 - mu_0) * f_3_0);
+    let psi_2_0 = ((x * alpha * mu_0 + 2.0 + 2.0 * mu_0) * d_2_0
+        + (x * alpha * mu_0 + mu_0) * d_4_0)
+        + e1 * ((-x * alpha * mu_0 + 2.0 + 2.0 * mu_0) * f_2_0 + (x * alpha * mu_0 - mu_0) * f_4_0);
+    let psi_3_0 = ((-x * alpha * mu_0 - mu_0) * d_1_0 + (-x * alpha * mu_0 + 2.0) * d_3_0)
+        + e1 * ((-x * alpha * mu_0 + mu_0) * f_1_0 + (x * alpha * mu_0 + 2.0) * f_3_0);
+    let psi_4_0 = ((-x * alpha * mu_0 - mu_0) * d_2_0 + (-x * alpha * mu_0 + 2.0) * d_4_0)
+        + e1 * ((-x * alpha * mu_0 + mu_0) * f_2_0 + (x * alpha * mu_0 + 2.0) * f_4_0);
 
-    let psi_1_1 = ((x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * d_1_1
-        + (x * mu_0 + mu_0 / alpha) * d_3_1)
-        + e * ((-x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * f_1_1
-            + (x * mu_0 - mu_0 / alpha) * f_3_1);
-    let psi_2_1 = ((x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * d_2_1
-        + (x * mu_0 + mu_0 / alpha) * d_4_1)
-        + e * ((-x * mu_0 + 2_f64 / alpha + 2_f64 * mu_0 / alpha) * f_2_1
-            + (x * mu_0 - mu_0 / alpha) * f_4_1);
-    let psi_3_1 = ((-x * mu_0 - mu_0 / alpha) * d_1_1 + (-x * mu_0 + 2_f64 / alpha) * d_3_1)
-        + e * ((-x * mu_0 + mu_0 / alpha) * f_1_1 + (x * mu_0 + 2_f64 / alpha) * f_3_1);
-    let psi_4_1 = ((-x * mu_0 - mu_0 / alpha) * d_2_1 + (-x * mu_0 + 2_f64 / alpha) * d_4_1)
-        + e * ((-x * mu_0 + mu_0 / alpha) * f_2_1 + (x * mu_0 + 2_f64 / alpha) * f_4_1);
+    let psi_1_1 = (-x * mu_0 + 2.0 / alpha + 2.0 * mu_0 / alpha) * f_1_1
+        + e2 * e3
+            * ((x * alpha * mu_0 + 2.0 + 2.0 * mu_0) * alpha * d_1_1
+                + (x * alpha * mu_0 + mu_0) * alpha * d_3_1)
+        + e3 * ((x * alpha * mu_0 - mu_0) * f_3_1);
+    let psi_2_1 = (-x * mu_0 + 2.0 / alpha + 2.0 * mu_0 / alpha) * f_2_1
+        + (x * mu_0 - mu_0 / alpha) * f_4_1
+        + e2 * e3
+            * ((x * alpha * mu_0 + 2.0 + 2.0 * mu_0) * alpha * d_2_1
+                + (x * alpha * mu_0 + mu_0) * alpha * d_4_1);
+    let psi_3_1 = (-x * mu_0 + mu_0 / alpha) * f_1_1
+        + e2 * e3
+            * ((-x * alpha * mu_0 - mu_0) * d_1_1 + (-x * alpha * mu_0 + 2.0) * alpha * d_3_1)
+        + e3 * ((x * alpha * mu_0 + 2.0) * alpha * f_3_1);
+    let psi_4_1 = (-x * mu_0 + mu_0 / alpha) * f_2_1
+        + (x * mu_0 + 2.0 / alpha) * f_4_1
+        + e2 * e3
+            * ((-x * alpha * mu_0 - mu_0) * alpha * d_2_1
+                + (-x * alpha * mu_0 + 2.0) * alpha * d_4_1);
 
     (
         (
@@ -273,16 +290,16 @@ fn psi_2(
     g: f64,
     lambda: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
-    let e1 = f64::exp(alpha * x);
+    let e1 = f64::exp(-alpha * x);
     let e2 = f64::exp(alpha * (x - b));
 
     let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
         psi_1(x, b, alpha, mu_0, g, lambda);
 
-    let psi_1_0 = e2 * psi_1_0 / alpha;
-    let psi_2_0 = e2 * psi_2_0 / alpha;
-    let psi_3_0 = e2 * psi_3_0 / alpha;
-    let psi_4_0 = e2 * psi_4_0 / alpha;
+    let psi_1_0 = e2 * psi_1_0;
+    let psi_2_0 = e2 * psi_2_0;
+    let psi_3_0 = e2 * psi_3_0;
+    let psi_4_0 = e2 * psi_4_0;
 
     let psi_1_1 = e1 * psi_1_1;
     let psi_2_1 = alpha * e1 * psi_2_1;
@@ -304,16 +321,16 @@ fn der_psi_2(
     g: f64,
     lambda: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
-    let e1 = f64::exp(alpha * x);
+    let e1 = f64::exp(-alpha * x);
     let e2 = f64::exp(alpha * (x - b));
 
     let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
         der_psi_1(x, b, alpha, mu_0, g, lambda);
 
-    let psi_1_0 = e2 * psi_1_0;
-    let psi_2_0 = e2 * psi_2_0;
-    let psi_3_0 = e2 * psi_3_0;
-    let psi_4_0 = e2 * psi_4_0;
+    let psi_1_0 = alpha * e2 * psi_1_0;
+    let psi_2_0 = alpha * e2 * psi_2_0;
+    let psi_3_0 = alpha * e2 * psi_3_0;
+    let psi_4_0 = alpha * e2 * psi_4_0;
 
     let psi_1_1 = alpha * e1 * psi_1_1;
     let psi_2_1 = alpha * alpha * e1 * psi_2_1;
@@ -463,7 +480,7 @@ fn phi(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> Matrix {
                 .into_par_iter()
                 .map(|k| {
                     if m == k {
-                        h_m * g_k[k] + PI / 8_f64 / (2_f64 * m as f64 + 1_f64)
+                        h_m * g_k[k] + PI / 8_f64 / (2.0 * m as f64 + 1_f64)
                     } else {
                         h_m * g_k[k]
                     }
@@ -478,9 +495,9 @@ fn phi(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> Matrix {
 fn unknown_function(h: f64, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> f64 {
     let phi = phi(a, b, mu_0, g, lambda, eps);
 
-    let a1 = -2_f64 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
+    let a1 = -2.0 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
     let sh = f64::sinh(f64::acosh(
-        h * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64,
+        h * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64,
     ));
     // let sqrt = f64::sqrt(1_f64 - h * h);
     let f = |i| {
@@ -512,14 +529,13 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     let ((y_psi_1_0, y_psi_2_0, _, __), (y_psi_1_1, y_psi_2_1, _, _)) =
         psi_2(y, b, alpha, mu_0, g, lambda);
     let _f = |x: f64| {
-        let x1 = (x + 1_f64) / 2_f64;
+        let x1 = (x + 1_f64) / 2.0;
         let f_val = unknown_function(x1, a, b, mu_0, g, lambda, eps);
         let a1 = 1_f64
             / f64::sinh(f64::acosh(
-                x1 * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64,
+                x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64,
             ));
-        let h =
-            b - 2_f64 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
+        let h = b - 2.0 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64);
         let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g1 = if y < h {
@@ -533,10 +549,9 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
 
         (sqrt1 / sqrt2) * a1 * g1 * f_val
     };
-    // let int_val = sqrt_gauss_integral(2, eps, &f) / 2_f64;
+    // let int_val = sqrt_gauss_integral(2, eps, &f) / 2.0;
     let int_val = 0_f64;
-    let coef =
-        (-1_f64 - mu_0) * f64::sin(alpha * a) * 2_f64 * a * f64::cosh(PI * b / (2_f64 * a)) / PI;
+    let coef = (-1_f64 - mu_0) * f64::sin(alpha * a) * 2.0 * a * f64::cosh(PI * b / (2.0 * a)) / PI;
     coef * int_val - y_psi_2_0 * pn
 }
 
@@ -557,14 +572,13 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     let ((_, _, y_psi_3_0, y_psi_4_0), (_, _, y_psi_3_1, y_psi_4_1)) =
         psi_2(y, b, alpha, mu_0, g, lambda);
     let _f = |x: f64| {
-        let x1 = (x + 1_f64) / 2_f64;
+        let x1 = (x + 1_f64) / 2.0;
         let f_val = unknown_function(x1, a, b, mu_0, g, lambda, eps);
         let a1 = 1_f64
             / f64::sinh(f64::acosh(
-                x1 * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64,
+                x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64,
             ));
-        let h =
-            b - 2_f64 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2_f64 * a)) - 1_f64) + 1_f64);
+        let h = b - 2.0 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64);
         let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g3 = if y < h {
@@ -578,10 +592,9 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
 
         (sqrt1 / sqrt2) * a1 * g3 * f_val
     };
-    // let int_val = sqrt_gauss_integral(20, eps, &f) / 2_f64;
+    // let int_val = sqrt_gauss_integral(20, eps, &f) / 2.0;
     let int_val = 0_f64;
-    let coef =
-        (-1_f64 - mu_0) * f64::sin(alpha * a) * 2_f64 * a * f64::cosh(PI * b / (2_f64 * a)) / PI;
+    let coef = (-1_f64 - mu_0) * f64::sin(alpha * a) * 2.0 * a * f64::cosh(PI * b / (2.0 * a)) / PI;
 
     coef * int_val * int_val - y_psi_4_0 * pn
 }
@@ -602,8 +615,7 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     });
     let ((_, _, _, y_psi_4_0), (_, _, _, _)) = der_psi_2(y, b, alpha, mu_0, g, lambda);
     let int_val = 0_f64;
-    let coef =
-        (-1_f64 - mu_0) * f64::sin(alpha * a) * 2_f64 * a * f64::cosh(PI * b / (2_f64 * a)) / PI;
+    let coef = (-1_f64 - mu_0) * f64::sin(alpha * a) * 2.0 * a * f64::cosh(PI * b / (2.0 * a)) / PI;
 
     coef * int_val * int_val - y_psi_4_0 * pn
 }
@@ -625,8 +637,7 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let f = |i| {
         if x != a && x != 0_f64 {
             let alpha = PI / a * (i as f64 - 0.5);
-            2_f64
-                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+            2.0 * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
                 * f64::sin(alpha * x)
                 / a
         } else {
@@ -654,8 +665,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     let f = |i| {
         if x != a && x != 0_f64 {
             let alpha = PI / a * (i as f64 - 0.5);
-            2_f64
-                * alpha
+            2.0 * alpha
                 * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
                 * f64::cos(alpha * x)
                 / a
@@ -683,9 +693,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     let start = 1;
     let f = |i| {
         let alpha = PI / a * (i as f64 - 0.5);
-        2_f64
-            * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-            * f64::cos(alpha * x)
+        2.0 * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps) * f64::cos(alpha * x)
             / a
     };
 
@@ -708,8 +716,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     let start = 1;
     let f = |i| {
         let alpha = PI / a * (i as f64 - 0.5);
-        2_f64
-            * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+        2.0 * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
             * f64::cos(alpha * x)
             / a
     };
@@ -731,7 +738,7 @@ fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
     let d_ux = function_derivative_u_x(a, b, x, y, mu_0, g, lambda, load_function, eps);
     let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-    2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
+    2.0 * g * d_ux + lambda * d_vy + lambda * d_ux
 }
 
 fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -748,7 +755,7 @@ fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     let d_ux = function_derivative_u_x(a, b, x, y, mu_0, g, lambda, load_function, eps);
     let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-    2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
+    2.0 * g * d_vy + lambda * d_vy + lambda * d_ux
 }
 
 #[cfg(test)]
@@ -764,46 +771,52 @@ mod tests {
         lambda: f64,
     ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
         let coef = (1_f64 + mu_0) * 4_f64;
-        let e = f64::exp(-2_f64 * alpha * x);
+        let e1 = f64::exp(-2.0 * alpha * x);
+        let e2 = f64::exp(2.0 * alpha * x);
+        let e3 = f64::exp(-2.0 * alpha * b);
 
         let (
             (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
             (d_1_1, d_2_1, d_3_1, d_4_1, f_1_1, f_2_1, f_3_1, f_4_1),
         ) = coefficients_1(b, alpha, mu_0, g, lambda);
 
-        let psi_1_0 = ((x * mu_0 + 2_f64 / alpha + 3_f64 * mu_0 / alpha) * d_1_0
-            + (x * mu_0 + 2_f64 * mu_0 / alpha) * d_3_0)
-            + e * ((x * mu_0 - 2_f64 / alpha - 3_f64 * mu_0 / alpha) * f_1_0
-                + (-x * mu_0 + 2_f64 * mu_0 / alpha) * f_3_0);
-        let psi_2_0 = ((x * mu_0 + 2_f64 / alpha + 3_f64 * mu_0 / alpha) * d_2_0
-            + (x * mu_0 + 2_f64 * mu_0 / alpha) * d_4_0)
-            + e * ((x * mu_0 - 2_f64 / alpha - 3_f64 * mu_0 / alpha) * f_2_0
-                + (-x * mu_0 + 2_f64 * mu_0 / alpha) * f_4_0);
-        let psi_3_0 = ((-x * mu_0 - 2_f64 * mu_0 / alpha) * d_1_0
-            + (-x * mu_0 + 2_f64 / alpha - mu_0 / alpha) * d_3_0)
-            + e * ((x * mu_0 - 2_f64 * mu_0 / alpha) * f_1_0
-                + (-x * mu_0 - 2_f64 / alpha + mu_0 / alpha) * f_3_0);
-        let psi_4_0 = ((-x * mu_0 - 2_f64 * mu_0 / alpha) * d_2_0
-            + (-x * mu_0 + 2_f64 / alpha - mu_0 / alpha) * d_4_0)
-            + e * ((x * mu_0 - 2_f64 * mu_0 / alpha) * f_2_0
-                + (-x * mu_0 - 2_f64 / alpha + mu_0 / alpha) * f_4_0);
+        let psi_1_0 = ((x * alpha * mu_0 + 2.0 + 3.0 * mu_0) * d_1_0
+            + (x * alpha * mu_0 + 2.0 * mu_0) * d_3_0)
+            + e1 * ((x * alpha * mu_0 - 2.0 - 3.0 * mu_0) * f_1_0
+                + (-x * alpha * mu_0 + 2.0 * mu_0) * f_3_0);
+        let psi_2_0 = ((x * alpha * mu_0 + 2.0 + 3.0 * mu_0) * d_2_0
+            + (x * alpha * mu_0 + 2.0 * mu_0) * d_4_0)
+            + e1 * ((x * alpha * mu_0 - 2.0 - 3.0 * mu_0) * f_2_0
+                + (-x * alpha * mu_0 + 2.0 * mu_0) * f_4_0);
+        let psi_3_0 = ((-x * alpha * mu_0 - 2.0 * mu_0) * d_1_0
+            + (-x * alpha * mu_0 + 2.0 - mu_0) * d_3_0)
+            + e1 * ((x * alpha * mu_0 - 2.0 * mu_0) * f_1_0
+                + (-x * alpha * mu_0 - 2.0 + mu_0) * f_3_0);
+        let psi_4_0 = ((-x * alpha * mu_0 - 2.0 * mu_0) * d_2_0
+            + (-x * alpha * mu_0 + 2.0 - mu_0) * d_4_0)
+            + e1 * ((x * alpha * mu_0 - 2.0 * mu_0) * f_2_0
+                + (-x * alpha * mu_0 - 2.0 + mu_0) * f_4_0);
 
-        let psi_1_1 = ((x * mu_0 + 2_f64 / alpha + 3_f64 * mu_0 / alpha) * d_1_1
-            + (x * mu_0 + 2_f64 * mu_0 / alpha) * d_3_1)
-            + e * ((x * mu_0 - 2_f64 / alpha - 3_f64 * mu_0 / alpha) * f_1_1
-                + (-x * mu_0 + 2_f64 * mu_0 / alpha) * f_3_1);
-        let psi_2_1 = ((x * mu_0 + 2_f64 / alpha + 3_f64 * mu_0 / alpha) * d_2_1
-            + (x * mu_0 + 2_f64 * mu_0 / alpha) * d_4_1)
-            + e * ((x * mu_0 - 2_f64 / alpha - 3_f64 * mu_0 / alpha) * f_2_1
-                + (-x * mu_0 + 2_f64 * mu_0 / alpha) * f_4_1);
-        let psi_3_1 = ((-x * mu_0 - 2_f64 * mu_0 / alpha) * d_1_1
-            + (-x * mu_0 + 2_f64 / alpha - mu_0 / alpha) * d_3_1)
-            + e * ((x * mu_0 - 2_f64 * mu_0 / alpha) * f_1_1
-                + (-x * mu_0 - 2_f64 / alpha + mu_0 / alpha) * f_3_1);
-        let psi_4_1 = ((-x * mu_0 - 2_f64 * mu_0 / alpha) * d_2_1
-            + (-x * mu_0 + 2_f64 / alpha - mu_0 / alpha) * d_4_1)
-            + e * ((x * mu_0 - 2_f64 * mu_0 / alpha) * f_2_1
-                + (-x * mu_0 - 2_f64 / alpha + mu_0 / alpha) * f_4_1);
+        let psi_1_1 = (x * mu_0 - 2.0 / alpha - 3.0 * mu_0 / alpha) * f_1_1
+            + e2 * e3
+                * ((x * alpha * mu_0 + 2.0 + 3.0 * mu_0) * alpha * d_1_1
+                    + (x * alpha * mu_0 + 2.0 * mu_0) * alpha * d_3_1)
+            + e3 * ((-x * alpha * mu_0 + 2.0 * mu_0) * alpha * f_3_1);
+        let psi_2_1 = (x * mu_0 - 2.0 / alpha - 3.0 * mu_0 / alpha) * f_2_1
+            + (-x * mu_0 + 2.0 * mu_0 / alpha) * f_4_1
+            + e2 * e3
+                * ((x * alpha * mu_0 + 2.0 + 3.0 * mu_0) * alpha * d_2_1
+                    + (x * alpha * mu_0 + 2.0 * mu_0) * alpha * d_4_1);
+        let psi_3_1 = (x * mu_0 - 2.0 * mu_0 / alpha) * f_1_1
+            + e2 * e3
+                * ((-x * alpha * mu_0 - 2.0 * mu_0) * alpha * d_1_1
+                    + (-x * alpha * mu_0 + 2.0 - mu_0) * alpha * d_3_1)
+            + e3 * ((-x * alpha * mu_0 - 2.0 + mu_0) * alpha * f_3_1);
+        let psi_4_1 = (x * mu_0 - 2.0 * mu_0 / alpha) * f_2_1
+            + (-x * mu_0 - 2.0 / alpha + mu_0 / alpha) * f_4_1
+            + e2 * e3
+                * ((-x * alpha * mu_0 - 2.0 * mu_0) * alpha * d_2_1
+                    + (-x * alpha * mu_0 + 2.0 - mu_0) * alpha * d_4_1);
 
         (
             (
@@ -829,16 +842,16 @@ mod tests {
         g: f64,
         lambda: f64,
     ) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
-        let e1 = f64::exp(alpha * x);
-        let e2 = f64::exp(-alpha * b);
+        let e1 = f64::exp(-alpha * x);
+        let e2 = f64::exp(alpha * (x - b));
 
         let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
             der_2_psi_1(x, b, alpha, mu_0, g, lambda);
 
-        let psi_1_0 = alpha * e1 * e2 * psi_1_0;
-        let psi_2_0 = alpha * e1 * e2 * psi_2_0;
-        let psi_3_0 = alpha * e1 * e2 * psi_3_0;
-        let psi_4_0 = alpha * e1 * e2 * psi_4_0;
+        let psi_1_0 = alpha * alpha * e2 * psi_1_0;
+        let psi_2_0 = alpha * alpha * e2 * psi_2_0;
+        let psi_3_0 = alpha * alpha * e2 * psi_3_0;
+        let psi_4_0 = alpha * alpha * e2 * psi_4_0;
 
         let psi_1_1 = alpha * alpha * e1 * psi_1_1;
         let psi_2_1 = alpha * alpha * alpha * e1 * psi_2_1;
@@ -868,22 +881,20 @@ mod tests {
             let e1 = f64::exp(alpha * b);
             let e2 = f64::exp(-alpha * b);
 
-            let x1 = 2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0;
-            let x2 = 2_f64 * b * alpha * alpha * mu_0 - 2_f64 * alpha;
-            let x3 = -2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0;
-            let x4 = 2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha;
-            let x5 = -2_f64 * g * b * alpha * alpha * mu_0 - 2_f64 * g * alpha * mu_0
-                + 2_f64 * alpha * lambda;
-            let x6 =
-                -2_f64 * g * b * alpha * alpha * mu_0 + 4_f64 * g * alpha + 2_f64 * alpha * lambda;
-            let x7 = -2_f64 * g * b * alpha * alpha * mu_0 + 2_f64 * g * alpha * mu_0
-                - 2_f64 * alpha * lambda;
-            let x8 =
-                2_f64 * g * b * alpha * alpha * mu_0 + 4_f64 * g * alpha + 2_f64 * alpha * lambda;
-            let x9 = 2_f64 * alpha + 2_f64 * alpha * mu_0;
-            let x10 = -2_f64 * alpha;
-            let x11 = 2_f64 + mu_0;
-            let x12 = -2_f64 - mu_0;
+            let x1 = 2.0 * b * alpha * alpha * mu_0 + 2.0 * alpha + 2.0 * alpha * mu_0;
+            let x2 = 2.0 * b * alpha * alpha * mu_0 - 2.0 * alpha;
+            let x3 = -2.0 * b * alpha * alpha * mu_0 + 2.0 * alpha + 2.0 * alpha * mu_0;
+            let x4 = 2.0 * b * alpha * alpha * mu_0 + 2.0 * alpha;
+            let x5 =
+                -2.0 * g * b * alpha * alpha * mu_0 - 2.0 * g * alpha * mu_0 + 2.0 * alpha * lambda;
+            let x6 = -2.0 * g * b * alpha * alpha * mu_0 + 4_f64 * g * alpha + 2.0 * alpha * lambda;
+            let x7 =
+                -2.0 * g * b * alpha * alpha * mu_0 + 2.0 * g * alpha * mu_0 - 2.0 * alpha * lambda;
+            let x8 = 2.0 * g * b * alpha * alpha * mu_0 + 4_f64 * g * alpha + 2.0 * alpha * lambda;
+            let x9 = 2.0 * alpha + 2.0 * alpha * mu_0;
+            let x10 = -2.0 * alpha;
+            let x11 = 2.0 + mu_0;
+            let x12 = -2.0 - mu_0;
 
             let (
                 (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
@@ -970,6 +981,138 @@ mod tests {
     }
 
     #[test]
+    fn lim_coefficients_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        for i in 2..1000 {
+            println!("-----");
+            let alpha = PI / a * (i as f64 - 0.5);
+
+            let (
+                (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
+                (d_1_1, d_2_1, d_3_1, d_4_1, f_1_1, f_2_1, f_3_1, f_4_1),
+            ) = coefficients_1(b, alpha, mu_0, g, lambda);
+
+            println!(
+                "d_1_0: {d_1_0}, exp: {0}",
+                (1.0 + mu_0) * 2.0 * g * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "d_2_0: {d_2_0}, exp: {0}",
+                (1.0 + mu_0) * 2.0 * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "d_3_0: {d_3_0}, exp: {0}",
+                -(1.0 + mu_0) * 2.0 * g * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "d_4_0: {d_4_0}, exp: {0}",
+                -(1.0 + mu_0) * 2.0 * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            //
+            println!(
+                "f_1_0: {f_1_0}, exp: {0}",
+                -(1.0 + mu_0) * 2.0 * g * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "f_2_0: {f_2_0}, exp: {0}",
+                -(1.0 + mu_0) * 2.0 * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "f_3_0: {f_3_0}, exp: {0}",
+                -(1.0 + mu_0) * 2.0 * g * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "f_4_0: {f_4_0}, exp: {0}",
+                -(1.0 + mu_0) * 2.0 * b * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            //
+            println!(
+                "d_1_1: {d_1_1}, exp: {0}",
+                4.0 * g * b * b * mu_0 * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "d_2_1: {d_2_1}, exp: {0}",
+                -8.0 * g * b * b * mu_0 * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "d_3_1: {d_3_1}, exp: {0}",
+                -4.0 * g * b * b * mu_0 * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            println!(
+                "d_4_1: {d_4_1}, exp: {0}",
+                8.0 * g * b * b * mu_0 * mu_0 / (g + lambda) / (-2.0 - mu_0)
+            );
+            //
+            println!("f_1_1: {f_1_1}, exp: {0}", 2.0);
+            println!("f_2_1: {f_2_1}, exp: {0}", 4.0 / (2.0 + mu_0));
+            println!(
+                "f_3_1: {f_3_1}, exp: {0}",
+                4.0 * g * b * b * mu_0 * mu_0 / (g + lambda) / (2.0 + mu_0)
+            );
+            println!(
+                "f_4_1: {f_4_1}, exp: {0}",
+                -4.0 * (1.0 + mu_0) / (2.0 + mu_0)
+            );
+        }
+    }
+
+    #[test]
+    fn lim_psi_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        let x = 1.0;
+        for i in 0..1111 {
+            println!("----");
+            let alpha = PI / a * (i as f64 - 0.5);
+
+            let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
+                psi_1(x, b, alpha, mu_0, g, lambda);
+
+            println!(
+                "psi_1_0: {psi_1_0}, exp: {0}",
+                -g * b * mu_0 / (g + lambda) / 2.0
+            );
+            println!(
+                "psi_2_0: {psi_2_0}, exp: {0}",
+                -b * mu_0 / (g + lambda) / 2.0
+            );
+            println!(
+                "psi_3_0: {psi_3_0}, exp: {0}",
+                -g * b * mu_0 / (g + lambda) / 2.0
+            );
+            println!(
+                "psi_4_0: {psi_4_0}, exp: {0}",
+                -b * mu_0 / (g + lambda) / 2.0
+            );
+            //
+            println!(
+                "psi_1_1: {psi_1_1}, exp: {0}",
+                x * mu_0 / (1.0 + mu_0) / 2.0
+            );
+            println!("psi_2_1: {psi_2_1}, exp: {0}", x * mu_0 / (1.0 + mu_0));
+            println!(
+                "psi_3_1: {psi_3_1}, exp: {0}",
+                -x * mu_0 / (1.0 + mu_0) / 2.0
+            );
+            println!("psi_4_1: {psi_4_1}, exp: {0}", x * mu_0 / (1.0 + mu_0));
+        }
+    }
+
+    #[test]
     fn equation_psi_test() {
         let a = 10_f64;
         let b = 15_f64;
@@ -980,9 +1123,9 @@ mod tests {
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
 
-        for x in 0..(b - 1_f64) as usize {
+        for x in 2..(b - 1_f64) as usize {
             let x = x as f64;
-            for i in 1..20 {
+            for i in 2..20 {
                 println!("----");
                 let alpha = PI / a * (i as f64 - 0.5);
 
@@ -1060,8 +1203,8 @@ mod tests {
 
             let line_1 = der_psi_1_0 + (-alpha) * psi_3_0;
             let line_2 = der_psi_2_0 + (-alpha) * psi_4_0;
-            let line_3 = (2_f64 * g + lambda) * der_psi_3_0 + (alpha * lambda) * psi_1_0;
-            let line_4 = (2_f64 * g + lambda) * der_psi_4_0 + (alpha * lambda) * psi_2_0;
+            let line_3 = (2.0 * g + lambda) * der_psi_3_0 + (alpha * lambda) * psi_1_0;
+            let line_4 = (2.0 * g + lambda) * der_psi_4_0 + (alpha * lambda) * psi_2_0;
 
             println!("0 line 1: {line_1}");
             println!("0 line 2: {line_2}");
@@ -1070,8 +1213,8 @@ mod tests {
 
             let line_1 = der_psi_1_1 + (-alpha) * psi_3_1;
             let line_2 = der_psi_2_1 + (-alpha) * psi_4_1;
-            let line_3 = (2_f64 * g + lambda) * der_psi_3_1 + (alpha * lambda) * psi_1_1;
-            let line_4 = (2_f64 * g + lambda) * der_psi_4_1 + (alpha * lambda) * psi_2_1;
+            let line_3 = (2.0 * g + lambda) * der_psi_3_1 + (alpha * lambda) * psi_1_1;
+            let line_4 = (2.0 * g + lambda) * der_psi_4_1 + (alpha * lambda) * psi_2_1;
 
             println!("1 line 1: {line_1}");
             println!("1 line 2: {line_2}");
