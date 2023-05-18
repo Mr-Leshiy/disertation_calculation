@@ -117,9 +117,9 @@ mod tests {
         let eps = 0.001;
 
         let f = |y| {
-            let cheb1 = chebyshev(y, 2 * m + 1);
+            let cheb = chebyshev(y, 2 * m + 1);
             let log = f64::ln(f64::abs((x + y) / (x - y)));
-            cheb1 * log
+            cheb * log
         };
 
         let right = sqrt_gauss_integral(10, eps, &f) / std::f64::consts::PI / 2_f64;

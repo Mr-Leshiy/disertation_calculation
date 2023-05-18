@@ -411,96 +411,47 @@ fn der_psi_2(
     )
 }
 
-fn a_1<F: Fn(f64) -> f64 + Send + Sync>(
+fn a_1<F: Fn(f64) -> f64 + Send + Sync>(a: f64, x: f64, load_function: &F, eps: f64) -> f64 {
+    const N: i32 = 20;
+    let sum_fn = |t: f64| {
+        if t == a {
+            return 0.0;
+        }
+        let sum = (1..N)
+            .into_par_iter()
+            .map(|n| {
+                let alpha = PI / a * (n as f64 - 0.5);
+                f64::cos(alpha * t) * f64::cos(alpha * x)
+            })
+            .sum::<f64>();
+        sum
+    };
+    let sum = if x != a {
+        definite_integral(0.0, a, 10, eps, &sum_fn)
+    } else {
+        0.0
+    };
+
+    let res = 2.0 / a * sum - load_function(x);
+    res
+}
+
+fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
+    m: usize,
     a: f64,
     b: f64,
-    x: f64,
     mu_0: f64,
-    g: f64,
-    lambda: f64,
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    const N: i32 = 20;
-    let sum_1_fn = |t: f64| {
-        if t == a {
-            return 0.0;
-        }
-        let a1 = PI * b * mu_0 / (4.0 * a * (g + lambda))
-            * (f64::cos(PI / (2.0 * a) * (x + t)) / (1.0 - f64::cos(PI / a * (x + t)))
-                + f64::cos(PI / (2.0 * a) * (x - t)) / (1.0 - f64::cos(PI / a * (x - t))));
-        let a2 = (1..N)
-            .into_par_iter()
-            .map(|n| {
-                let alpha = PI / a * (n as f64 - 0.5);
-                let ((_, _, _, psi_4_0), _) = psi_1(b, b, alpha, mu_0, g, lambda);
-                let ((_, _, _, der_psi_4_0), _) = der_psi_1(b, b, alpha, mu_0, g, lambda);
-                let a1 = f64::cos(alpha * (x + t)) + f64::cos(alpha * (x - t));
-                let a2 = alpha * psi_4_0 + der_psi_4_0;
-                a1 * a2
-            })
-            .sum::<f64>();
-        let a3 = (b * mu_0) / (2.0 * (g + lambda))
-            * (0..N)
-                .into_par_iter()
-                .map(|n| {
-                    let alpha = (2.0 * n as f64 + 1.0) * PI / (2.0 * a);
-                    let a1 = f64::cos(alpha * (x + t)) + f64::cos(alpha * (x - t));
-                    a1
-                })
-                .sum::<f64>();
-
-        (a1 + a2 + a3) * load_function(t)
+    let f = |l| {
+        let x = 2.0 * a / PI * f64::acos(l);
+        let a_1 = a_1(a, x, load_function, eps);
+        let coef = 4.0 * (1.0 + mu_0) * (f64::cosh(PI * b / a) - 1.0);
+        let cheb = chebyshev(l, 2 * m + 1);
+        cheb * a_1 / coef
     };
-    let sum_2_fn = |t: f64| {
-        if t == a {
-            return 0.0;
-        }
-        let a1 = -PI * b * mu_0 / (2.0 * a * (g + lambda))
-            * ((f64::cos(PI / (2.0 * a) * (x + t)) * (1.0 - f64::cos(PI / a * (x + t)))
-                + f64::sin(PI / a * (x + t)) * f64::sin(PI / (2.0 * a) * (x + t)))
-                / ((1.0 - f64::cos(PI / a * (x + t))) * (1.0 - f64::cos(PI / a * (x + t))) * 2.0)
-                + (f64::cos(PI / (2.0 * a) * (x - t)) * (1.0 - f64::cos(PI / a * (x - t)))
-                    + f64::sin(PI / a * (x - t)) * f64::sin(PI / (2.0 * a) * (x - t)))
-                    / ((1.0 - f64::cos(PI / a * (x - t)))
-                        * (1.0 - f64::cos(PI / a * (x - t)))
-                        * 2.0));
-        let a2 = (1..N)
-            .into_par_iter()
-            .map(|n| {
-                let alpha = PI / a * (n as f64 - 0.5);
-                let ((_, psi_2_0, _, _), _) = psi_1(b, b, alpha, mu_0, g, lambda);
-                let a1 = f64::cos(alpha * (x + t)) + f64::cos(alpha * (x - t));
-                let a2 = alpha * psi_2_0;
-                a1 * a2
-            })
-            .sum::<f64>();
-        let a3 = (b * mu_0) / (2.0 * (g + lambda))
-            * (0..N)
-                .into_par_iter()
-                .map(|n| {
-                    let alpha = (2.0 * n as f64 + 1.0) * PI / (2.0 * a);
-                    let a1 = f64::cos(alpha * (x + t)) + f64::cos(alpha * (x - t));
-                    a1
-                })
-                .sum::<f64>();
-
-        (a1 + a2 + a3) * load_function(t)
-    };
-
-    let sum_1 = if x != a {
-        (2.0 * g + lambda) / 2.0 * definite_integral(0.0, a, 10, eps, &sum_1_fn)
-    } else {
-        0.0
-    };
-    let sum_2 = if x != a {
-        lambda / 2.0 * definite_integral(0.0, a, 10, eps, &sum_2_fn)
-    } else {
-        0.0
-    };
-
-    let res = 2.0 / a * (sum_1 + sum_2) - load_function(x);
-    res
+    sqrt_gauss_integral(10, eps, &f)
 }
 
 fn h_m(m: usize, eps: f64) -> f64 {
@@ -1359,18 +1310,24 @@ mod tests {
     #[test]
     fn a_1_test() {
         let a = 10_f64;
+        let load_function = |x| x * x;
+        let eps = 0.001;
+
+        let x = 2.5;
+        let a_1 = a_1(a, x, &load_function, eps);
+        println!("{a_1}");
+    }
+
+    #[test]
+    fn f_m_test() {
+        let a = 10_f64;
         let b = 15_f64;
         let puasson_coef = 0.25;
-        let young_modulus = 200_f64;
-        let g = g(puasson_coef, young_modulus);
-        let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
         let load_function = |x| x * x;
         let eps = 0.001;
 
-        let x = 1.5;
-
-        let a_1 = a_1(a, b, x, mu_0, g, lambda, &load_function, eps);
-        println!("{a_1}");
+        let f_m = f_m(1, a, b, mu_0, &load_function, eps);
+        println!("{f_m}");
     }
 }
