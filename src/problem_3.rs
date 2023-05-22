@@ -436,6 +436,43 @@ fn a_1<F: Fn(f64) -> f64 + Send + Sync>(a: f64, x: f64, load_function: &F, eps: 
     res
 }
 
+fn a_2(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
+    2.0 * a * g * g * b * b * mu_0 * mu_0 / (PI * (1.0 + mu_0) * (g + lambda))
+}
+
+fn a_3(a: f64, b: f64, x: f64, ksi: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
+    const N: i32 = 20;
+    let sum1 = (1..N)
+        .into_par_iter()
+        .map(|n| {
+            let alpha = PI / a * (n as f64 - 0.5);
+            let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
+            let a1 = sign * f64::exp(alpha * (ksi - 2.0 * b)) * f64::cos(alpha * x) / alpha;
+            let ((psi_1_0_ksi, _, psi_3_0_ksi, _), _) = psi_1(ksi, b, alpha, mu_0, g, lambda);
+            let (_, (psi_1_1_b, psi_2_1_b, _, _)) = psi_1(b, b, alpha, mu_0, g, lambda);
+            let (_, (_, _, der_psi_3_1_b, der_psi_4_1_b)) = der_psi_1(b, b, alpha, mu_0, g, lambda);
+            let a2 = (der_psi_3_1_b * psi_1_0_ksi / alpha + der_psi_4_1_b * psi_3_0_ksi)
+                * (2.0 * g + lambda)
+                + (psi_1_1_b * psi_1_0_ksi / alpha + psi_2_1_b * psi_3_0_ksi) * lambda;
+
+            a1 * a2
+        })
+        .sum::<f64>();
+    let sum2 = (0..N)
+        .into_par_iter()
+        .map(|n| {
+            let alpha = 2.0 * n as f64 + 1.0;
+            let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
+            let a1 = sign
+                * f64::exp(alpha * (ksi - 2.0 * b) * PI / (2.0 * a))
+                * f64::cos(alpha * x * PI / (2.0 * a))
+                / alpha;
+            a1
+        })
+        .sum::<f64>();
+    sum1 - a_2(a, b, mu_0, g, lambda) * sum2
+}
+
 fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
     m: usize,
     a: f64,
@@ -454,77 +491,58 @@ fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
     sqrt_gauss_integral(10, eps, &f)
 }
 
-fn h_m(m: usize, eps: f64) -> f64 {
-    let f = |x| chebyshev(x, 2 * m + 1);
-    sqrt_gauss_integral(10, eps, &f)
-}
-
-fn g_k(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, k: usize, eps: f64) -> f64 {
-    let f = |x| {
-        let x1 = (x + 1_f64) / 2.0;
-        let cheb = chebyshev(x1, 2 * k + 1);
-        let h = b - 2.0 * a / PI * f64::acosh(x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64);
-
-        let a1 = -2.0 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
-
-        let f2_1 = |n| {
-            let alpha = PI / a * (n as f64 - 0.5);
-            let exp = f64::exp(-alpha * (b - h));
-            // approximation of sin(alpha(a + x)) + sin(alpha(a - x))
-            let sin = 2.0;
-
-            let ((h_psi_1_0, _, h_psi_3_0, _), (_, _, _, _)) = psi_1(h, b, alpha, mu_0, g, lambda);
-            let ((_, _, _, _), (b_psi_1_1, b_psi_2_1, _, _)) = psi_1(b, b, alpha, mu_0, g, lambda);
-            let ((_, _, _, _), (_, _, b_der_psi_3_1, b_der_psi_4_1)) =
-                der_psi_1(b, b, alpha, mu_0, g, lambda);
-
-            let sum = (2.0 * g + lambda)
-                * (b_der_psi_3_1 * h_psi_1_0 / alpha + b_der_psi_4_1 * h_psi_3_0)
-                + lambda * (b_psi_1_1 * h_psi_1_0 / alpha + b_psi_2_1 * h_psi_3_0);
-
-            exp * sin * sum / alpha
+fn g_k_m(m: usize, k: usize, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> f64 {
+    let f = |l| {
+        let cheb = chebyshev(l, 2 * m + 1);
+        let f = |h| {
+            let h = f64::abs(h);
+            let cheb = chebyshev(h, 2 * k + 1);
+            let h = 2.0 * b - 2.0 * a / PI * f64::acosh(h * (f64::cosh(PI * b / a) - 1.0) + 1.0);
+            let l = 2.0 * a / PI * f64::acos(l);
+            let a_3 = a_3(a, b, h, l, mu_0, g, lambda);
+            let a_2 = a_2(a, b, mu_0, g, lambda);
+            a_3 * cheb / a_2
         };
-        let a2_1 = sum_calc(0_f64, &f2_1, eps, 0, 100) / 2.0;
-        let f2_2 = |n| {
-            let n = n as f64;
-            let exp = f64::exp(-(2.0 * n + 1_f64) * PI / (2.0 * a) * (b - h));
-
-            exp / (2.0 * n + 1_f64)
-        };
-        let a2_2 = -a1 * sum_calc(0_f64, &f2_2, eps, 0, 100);
-
-        let a2 = a2_1 + a2_2;
-
-        let sqrt1 = f64::sqrt(1_f64 - x * x);
-        let sqrt2 = f64::sqrt(1_f64 - x1 * x1);
-
-        (sqrt1 / sqrt2) * (a2 / a1) * cheb
+        cheb * sqrt_gauss_integral(10, eps, &f) / 2.0
     };
-    sqrt_gauss_integral(10, eps, &f) / PI / 2.0
+    sqrt_gauss_integral(10, eps, &f) / PI
 }
 
-fn phi(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> Matrix {
-    let n = 100;
-    // zeros
-    let left: Vec<Vec<_>> = vec![vec![0_f64; n]];
-
-    let g_k: Vec<_> = (0..n)
+fn phi<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> Matrix {
+    const N: usize = 3;
+    let left: Vec<Vec<_>> = vec![(0..N)
         .into_par_iter()
-        .map(|k| g_k(a, b, mu_0, g, lambda, k, eps))
-        .collect();
-    let h_m: Vec<_> = (0..n).into_par_iter().map(|m| h_m(m, eps)).collect();
+        .map(|m| f_m(m as usize, a, b, mu_0, load_function, eps))
+        .collect()];
 
-    let a: Vec<Vec<_>> = (0..n)
+    let g_k_m: Vec<Vec<_>> = (0..N)
+        .into_par_iter()
+        .map(|k| {
+            (0..N)
+                .into_par_iter()
+                .map(|m| g_k_m(m, k, a, b, mu_0, g, lambda, eps))
+                .collect()
+        })
+        .collect();
+
+    let a: Vec<Vec<_>> = (0..N)
         .into_par_iter()
         .map(|m| {
-            let h_m = h_m[m];
-            (0..n)
+            (0..N)
                 .into_par_iter()
                 .map(|k| {
                     if m == k {
-                        h_m * g_k[k] + PI / 8_f64 / (2.0 * m as f64 + 1_f64)
+                        g_k_m[k][m] + PI / 8_f64 / (2.0 * m as f64 + 1_f64)
                     } else {
-                        h_m * g_k[k]
+                        g_k_m[k][m]
                     }
                 })
                 .collect()
@@ -534,8 +552,17 @@ fn phi(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> Matrix {
     system_solve(Matrix::new(a), Matrix::new(left), eps)
 }
 
-fn unknown_function(h: f64, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps: f64) -> f64 {
-    let phi = phi(a, b, mu_0, g, lambda, eps);
+fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
+    h: f64,
+    a: f64,
+    b: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let phi = phi(a, b, mu_0, g, lambda, load_function, eps);
 
     let a1 = -2.0 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
     let sh = f64::sinh(f64::acosh(
@@ -572,7 +599,7 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
         psi_2(y, b, alpha, mu_0, g, lambda);
     let _f = |x: f64| {
         let x1 = (x + 1_f64) / 2.0;
-        let f_val = unknown_function(x1, a, b, mu_0, g, lambda, eps);
+        let f_val = unknown_function(x1, a, b, mu_0, g, lambda, load_function, eps);
         let a1 = 1_f64
             / f64::sinh(f64::acosh(
                 x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64,
@@ -615,7 +642,7 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
         psi_2(y, b, alpha, mu_0, g, lambda);
     let _f = |x: f64| {
         let x1 = (x + 1_f64) / 2.0;
-        let f_val = unknown_function(x1, a, b, mu_0, g, lambda, eps);
+        let f_val = unknown_function(x1, a, b, mu_0, g, lambda, load_function, eps);
         let a1 = 1_f64
             / f64::sinh(f64::acosh(
                 x1 * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64,
@@ -1319,6 +1346,23 @@ mod tests {
     }
 
     #[test]
+    fn a_3_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        let x = 2.5;
+        let ksi = 2.5;
+        let a_3 = a_3(a, b, x, ksi, mu_0, g, lambda);
+        println!("{a_3}");
+    }
+
+    #[test]
     fn f_m_test() {
         let a = 10_f64;
         let b = 15_f64;
@@ -1330,5 +1374,38 @@ mod tests {
 
         let f_m = f_m(m, a, b, mu_0, &load_function, eps);
         println!("{f_m}");
+    }
+
+    #[test]
+    fn g_k_m_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let eps = 0.01;
+        let m = 5;
+        let k = 3;
+
+        let g_k_m = g_k_m(m, k, a, b, mu_0, g, lambda, eps);
+        println!("{g_k_m}");
+    }
+
+    #[test]
+    fn phi_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let load_function = |x| x * x;
+        let eps = 0.01;
+
+        let phi = phi(a, b, mu_0, g, lambda, &load_function, eps);
+        println!("{phi:?}");
     }
 }
