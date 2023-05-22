@@ -1311,7 +1311,7 @@ mod tests {
     fn a_1_test() {
         let a = 10_f64;
         let load_function = |x| x * x;
-        let eps = 0.001;
+        let eps = 0.01;
 
         let x = 2.5;
         let a_1 = a_1(a, x, &load_function, eps);
@@ -1325,9 +1325,10 @@ mod tests {
         let puasson_coef = 0.25;
         let mu_0 = mu_0(puasson_coef);
         let load_function = |x| x * x;
-        let eps = 0.001;
+        let eps = 0.01;
+        let m = 3;
 
-        let f_m = f_m(1, a, b, mu_0, &load_function, eps);
+        let f_m = f_m(m, a, b, mu_0, &load_function, eps);
         println!("{f_m}");
     }
 }
