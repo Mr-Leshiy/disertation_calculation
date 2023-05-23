@@ -505,7 +505,8 @@ fn g_k_m(m: usize, k: usize, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps
         };
         cheb * sqrt_gauss_integral(10, eps, &f) / 2.0
     };
-    sqrt_gauss_integral(10, eps, &f) / PI
+    let res = sqrt_gauss_integral(10, eps, &f) / PI;
+    res
 }
 
 fn phi<F: Fn(f64) -> f64 + Send + Sync>(
@@ -528,7 +529,10 @@ fn phi<F: Fn(f64) -> f64 + Send + Sync>(
         .map(|k| {
             (0..N)
                 .into_par_iter()
-                .map(|m| g_k_m(m, k, a, b, mu_0, g, lambda, eps))
+                .map(|m| {
+                    let res = g_k_m(m, k, a, b, mu_0, g, lambda, eps);
+                    res
+                })
                 .collect()
         })
         .collect();
@@ -564,11 +568,9 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
 ) -> f64 {
     let phi = phi(a, b, mu_0, g, lambda, load_function, eps);
 
-    let a1 = -2.0 * a * g * g * b * mu_0 * mu_0 * h / (PI * (1_f64 + mu_0));
-    let sh = f64::sinh(f64::acosh(
-        h * (f64::cosh(PI * b / (2.0 * a)) - 1_f64) + 1_f64,
-    ));
-    // let sqrt = f64::sqrt(1_f64 - h * h);
+    let a2 = a_2(a, b, mu_0, g, lambda);
+    let sh = f64::sinh(f64::acosh(h * (f64::cosh(PI * b / a) - 1.0) + 1.0));
+    // let sqrt = f64::sqrt(1.0 - h * h);
     let f = |i| {
         if i < phi.m() {
             phi.get_element(0, i) * chebyshev(h, 2 * i + 1)
@@ -578,7 +580,7 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     };
     let sum = sum_calc(0_f64, &f, eps, 0, 10);
 
-    a1 * sh * sum
+    sh * sum / a2
 }
 
 fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
@@ -1370,10 +1372,11 @@ mod tests {
         let mu_0 = mu_0(puasson_coef);
         let load_function = |x| x * x;
         let eps = 0.01;
-        let m = 3;
 
-        let f_m = f_m(m, a, b, mu_0, &load_function, eps);
-        println!("{f_m}");
+        for m in 0..3 {
+            let f_m = f_m(m, a, b, mu_0, &load_function, eps);
+            println!("{f_m}");
+        }
     }
 
     #[test]
@@ -1385,12 +1388,14 @@ mod tests {
         let g = g(puasson_coef, young_modulus);
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
-        let eps = 0.01;
-        let m = 5;
-        let k = 3;
+        let eps = 0.1;
 
-        let g_k_m = g_k_m(m, k, a, b, mu_0, g, lambda, eps);
-        println!("{g_k_m}");
+        for k in 0..10 {
+            for m in 0..10 {
+                let g_k_m = g_k_m(m, k, a, b, mu_0, g, lambda, eps);
+                println!("{g_k_m}");
+            }
+        }
     }
 
     #[test]
@@ -1403,9 +1408,27 @@ mod tests {
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
         let load_function = |x| x * x;
-        let eps = 0.01;
+        let eps = 0.1;
 
         let phi = phi(a, b, mu_0, g, lambda, &load_function, eps);
         println!("{phi:?}");
+    }
+
+    #[test]
+    fn unknown_function_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let h = 0.6;
+
+        let unkn = unknown_function(h, a, b, mu_0, g, lambda, &load_function, eps);
+        println!("{unkn}");
     }
 }

@@ -57,4 +57,13 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn chebyshev_2_test() {
+        for n in 0..10000 {
+            let x = 0.65;
+            let cheb = chebyshev(x, n);
+            println!("{}", cheb);
+        }
+    }
 }
