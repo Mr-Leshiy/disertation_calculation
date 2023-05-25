@@ -54,7 +54,7 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     let h_y = b / n_y as f64;
     let h_t = t / n_t as f64;
 
-    println!("Calculating ...");
+    println!("Calculating ...\n");
     let x: Vec<_> = (0..n_x).into_par_iter().map(|i| i as f64 * h_x).collect();
     let y: Vec<_> = (0..n_y).into_par_iter().map(|i| i as f64 * h_y).collect();
     let t: Vec<_> = (0..n_t).into_par_iter().map(|i| i as f64 * h_t).collect();
@@ -64,7 +64,17 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
         .map(|t| {
             y.clone()
                 .into_par_iter()
-                .map(|y| x.clone().into_par_iter().map(|x| f(x, y, t)).collect())
+                .map(|y| {
+                    x.clone()
+                        .into_par_iter()
+                        .map(|x| {
+                            println!("{x}|{y}|{t}| - start");
+                            let res = f(x, y, t);
+                            println!("{x}|{y}|{t}| - done");
+                            res
+                        })
+                        .collect()
+                })
                 .collect()
         })
         .collect();

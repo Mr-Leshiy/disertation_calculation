@@ -615,6 +615,7 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     let ((y_psi_1_0, y_psi_2_0, _, __), (y_psi_1_1, y_psi_2_1, _, _)) =
         psi_2(y, b, alpha, mu_0, g, lambda);
     let f = |ksi: f64| {
+        let ksi = f64::abs(ksi);
         let f_val = unknown_function(ksi, a, b, mu_0, g, lambda, load_function, eps);
         let a1 = f64::sqrt(
             ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
@@ -667,6 +668,7 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     let ((_, _, y_psi_3_0, y_psi_4_0), (_, _, y_psi_3_1, y_psi_4_1)) =
         psi_2(y, b, alpha, mu_0, g, lambda);
     let f = |ksi: f64| {
+        let ksi = f64::abs(ksi);
         let f_val = unknown_function(ksi, a, b, mu_0, g, lambda, load_function, eps);
         let a1 = f64::sqrt(
             ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
@@ -718,9 +720,43 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     let pn = definite_integral(0_f64, a, 100, eps, &|x| {
         load_function(x) * f64::cos(alpha * x)
     });
-    let ((_, _, _, y_psi_4_0), (_, _, _, _)) = der_psi_2(y, b, alpha, mu_0, g, lambda);
-    let int_val = 0_f64;
-    let coef = (-1_f64 - mu_0) * f64::sin(alpha * a) * 2.0 * a * f64::cosh(PI * b / (2.0 * a)) / PI;
+    let ((_, _, y_psi_3_0, y_psi_4_0), (_, _, y_psi_3_1, y_psi_4_1)) =
+        der_psi_2(y, b, alpha, mu_0, g, lambda);
+    let f = |ksi: f64| {
+        let ksi = f64::abs(ksi);
+        let f_val = unknown_function(ksi, a, b, mu_0, g, lambda, load_function, eps);
+        let a1 = f64::sqrt(
+            ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                + f64::cosh(PI * b / (2.0 * a))
+                - 1.0,
+        ) * f64::sqrt(
+            ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                + f64::cosh(PI * b / (2.0 * a))
+                + 1.0,
+        );
+        let h = 2.0 * b
+            - 2.0 * a / PI
+                * f64::acosh(
+                    ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                        + f64::cosh(PI * b / (2.0 * a)),
+                );
+        let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
+            psi_2(h, b, alpha, mu_0, g, lambda);
+        let g3 = if y < h {
+            (y_psi_3_0 * h_psi_1_1 + y_psi_4_0 * h_psi_3_1) / alpha / alpha / alpha
+        } else {
+            (y_psi_3_1 * h_psi_1_0 + y_psi_4_1 * h_psi_3_0) / alpha / alpha / alpha
+        };
+
+        g3 * f_val / a1
+    };
+    let int_val = sqrt_gauss_integral(20, eps, &f) / 2.0;
+    let coef = (-1_f64 - mu_0)
+        * f64::sin(alpha * a)
+        * 2.0
+        * a
+        * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+        / PI;
 
     coef * int_val * int_val - y_psi_4_0 * pn
 }
@@ -1464,5 +1500,24 @@ mod tests {
 
         let unkn = unknown_function(h, a, b, mu_0, g, lambda, &load_function, eps);
         println!("{unkn}");
+    }
+
+    #[test]
+    fn function_un_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let y = 5.0;
+        let n = 1;
+        let alpha = PI / a * (n as f64 - 0.5);
+        let function_un = function_un(a, b, y, alpha, mu_0, g, lambda, &load_function, eps);
+        println!("{function_un}");
     }
 }
