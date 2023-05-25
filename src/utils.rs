@@ -40,6 +40,15 @@ pub fn sum_calc<F: Fn(usize) -> f64 + Send + Sync>(
     result
 }
 
+pub fn sum_calc_finit<F: Fn(usize) -> f64 + Send + Sync>(
+    initial_value: f64,
+    f: &F,
+    start: usize,
+    n: usize,
+) -> f64 {
+    initial_value + (start..n).into_par_iter().map(|i| f(i)).sum::<f64>()
+}
+
 pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,

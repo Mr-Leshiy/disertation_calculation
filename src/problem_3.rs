@@ -1,8 +1,8 @@
 use crate::{
-    integration::{definite_integral, sqrt_gauss_integral},
+    integration::{definite_integral, sqrt_gauss_integral, sqrt_gauss_integral_finit},
     matrices::{system_solve, Matrix},
     polynomials::chebyshev,
-    utils::{function_calculation, g, lambda, mu_0, sum_calc, surface_static_plot},
+    utils::{function_calculation, g, lambda, mu_0, sum_calc_finit, surface_static_plot},
     FunctionType, LoadFunction,
 };
 use clap::Parser;
@@ -412,7 +412,7 @@ fn der_psi_2(
 }
 
 fn a_1<F: Fn(f64) -> f64 + Send + Sync>(a: f64, x: f64, load_function: &F, eps: f64) -> f64 {
-    const N: i32 = 20;
+    const N: i32 = 10;
     let sum_fn = |t: f64| {
         if t == a {
             return 0.0;
@@ -441,7 +441,7 @@ fn a_2(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
 }
 
 fn a_3(a: f64, b: f64, x: f64, ksi: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
-    const N: i32 = 20;
+    const N: i32 = 10;
     let sum1 = (1..N)
         .into_par_iter()
         .map(|n| {
@@ -593,7 +593,7 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
             0_f64
         }
     };
-    let sum = sum_calc(0_f64, &f, eps, 0, 10);
+    let sum = sum_calc_finit(0_f64, &f, 0, 10);
 
     a4 * sum / a2
 }
@@ -641,7 +641,7 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
         };
         f_val * g1 / a1
     };
-    let int_val = sqrt_gauss_integral(2, eps, &f) / 2.0;
+    let int_val = sqrt_gauss_integral_finit(4, &f) / 2.0;
     let coef = (-1_f64 - mu_0)
         * f64::sin(alpha * a)
         * 2.0
@@ -773,7 +773,7 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let initial_value = 0_f64;
-    let n = 10;
+    let n = 3;
     let start = 1;
     let f = |i| {
         if x != a && x != 0_f64 {
@@ -786,7 +786,7 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
         }
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    sum_calc_finit(initial_value, &f, start, n)
 }
 
 fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -801,7 +801,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let initial_value = 0_f64;
-    let n = 10;
+    let n = 3;
     let start = 1;
     let f = |i| {
         if x != a && x != 0_f64 {
@@ -815,7 +815,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
         }
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    sum_calc_finit(initial_value, &f, start, n)
 }
 
 fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
@@ -830,7 +830,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let initial_value = 0_f64;
-    let n = 10;
+    let n = 3;
     let start = 1;
     let f = |i| {
         let alpha = PI / a * (i as f64 - 0.5);
@@ -838,7 +838,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
             / a
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    sum_calc_finit(initial_value, &f, start, n)
 }
 
 fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -853,7 +853,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let initial_value = 0_f64;
-    let n = 10;
+    let n = 3;
     let start = 1;
     let f = |i| {
         let alpha = PI / a * (i as f64 - 0.5);
@@ -862,7 +862,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
             / a
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    sum_calc_finit(initial_value, &f, start, n)
 }
 
 fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -1519,5 +1519,24 @@ mod tests {
         let alpha = PI / a * (n as f64 - 0.5);
         let function_un = function_un(a, b, y, alpha, mu_0, g, lambda, &load_function, eps);
         println!("{function_un}");
+    }
+
+    #[test]
+    fn function_u_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let x = 6.0;
+        let y = 5.0;
+
+        let function_u = function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps);
+        println!("{function_u}");
     }
 }

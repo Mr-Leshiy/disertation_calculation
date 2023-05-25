@@ -46,6 +46,28 @@ pub fn definite_integral<F: Fn(f64) -> f64 + Send + Sync>(
     result
 }
 
+#[allow(dead_code)]
+pub fn definite_integral_limit<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    n: u32,
+    f: &F,
+) -> f64 {
+    assert!(a < b);
+
+    let h = (b - a) / n as f64;
+    let mut result = (0..n)
+        .into_par_iter()
+        .map(|i| {
+            let x = a + (i as f64) * h;
+            f(x)
+        })
+        .sum();
+    result *= h;
+
+    result
+}
+
 pub fn sqrt_gauss_integral<F: Fn(f64) -> f64 + Send + Sync>(mut n: u32, eps: f64, f: &F) -> f64 {
     let mut prev_result;
 
@@ -77,6 +99,19 @@ pub fn sqrt_gauss_integral<F: Fn(f64) -> f64 + Send + Sync>(mut n: u32, eps: f64
             break;
         }
     }
+    result
+}
+
+pub fn sqrt_gauss_integral_finit<F: Fn(f64) -> f64 + Send + Sync>(n: u32, f: &F) -> f64 {
+    let result = (1..n)
+        .into_par_iter()
+        .map(|i| {
+            let x = f64::cos(PI * (2_f64 * i as f64 - 1_f64) / (2_f64 * n as f64));
+            f(x)
+        })
+        .sum::<f64>()
+        * PI
+        / n as f64;
     result
 }
 
