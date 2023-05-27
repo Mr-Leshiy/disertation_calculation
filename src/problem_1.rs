@@ -1,6 +1,6 @@
 use crate::{
     integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0, sum_calc, surface_static_plot},
+    utils::{function_calculation, g, lambda, mu_0, save_static, sum_calc, surface_static_plot},
     FunctionType, LoadFunction,
 };
 use clap::Parser;
@@ -100,7 +100,9 @@ impl Problem1 {
             }
         };
 
-        surface_static_plot(&x, &y, &z[0]);
+        let file_name = format!("problem_1, a: {0}, b: {1}, n_x: {2}, n_y: {3}, puasson_coef: {4}, young_modulus: {5}, eps: {6}, function_type: {7}, load_function: {8}", self.a, self.b, self.n_x, self.n_y, self.puasson_coef, self.young_modulus, self.eps, self.function_type, self.load_function);
+        let path = save_static(&x, &y, &z[0], &file_name);
+        surface_static_plot(&path);
     }
 }
 

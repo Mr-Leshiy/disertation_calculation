@@ -1,5 +1,11 @@
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use std::{env::current_dir, fs::File, io::Write, process::Command};
+use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use std::{
+    env::current_dir,
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+    process::Command,
+};
 
 // calculate Lamme's coefficient G value
 pub fn g(puasson_coef: f64, young_modulus: f64) -> f64 {
@@ -76,7 +82,8 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
                 .map(|y| {
                     x.clone()
                         .into_par_iter()
-                        .map(|x| {
+                        .enumerate()
+                        .map(|(_, x)| {
                             println!("{x}|{y}|{t}| - start");
                             let res = f(x, y, t);
                             println!("{x}|{y}|{t}| - done");
@@ -90,11 +97,58 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     (x, y, z)
 }
 
-pub fn surface_static_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
-    print!("Drawing ...");
-    let path = current_dir().unwrap().join("result_tmp");
+pub fn save_static(x: &[f64], y: &[f64], z: &[Vec<f64>], file_name: &str) -> PathBuf {
+    let path = current_dir().unwrap().join(file_name);
     let mut file = File::create(&path).unwrap();
-    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}")).unwrap();
+    file.write_fmt(format_args!(
+        "{}|{}|{}",
+        serde_json::to_string(&x).unwrap(),
+        serde_json::to_string(&y).unwrap(),
+        serde_json::to_string(&z).unwrap()
+    ))
+    .unwrap();
+    path
+}
+
+#[allow(dead_code)]
+pub fn read_static(path: &PathBuf) -> (Vec<f64>, Vec<f64>, Vec<Vec<f64>>) {
+    let mut file = File::open(path).unwrap();
+    let mut s = String::new();
+    file.read_to_string(&mut s).unwrap();
+    let mut s = s.split('|');
+    let x = serde_json::from_str(s.next().unwrap()).unwrap();
+    let y = serde_json::from_str(s.next().unwrap()).unwrap();
+    let z = serde_json::from_str(s.next().unwrap()).unwrap();
+    (x, y, z)
+}
+
+pub fn save_dynamic(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>], file_name: &str) -> PathBuf {
+    let path = current_dir().unwrap().join(file_name);
+    let mut file = File::create(&path).unwrap();
+    file.write_fmt(format_args!(
+        "{}|{}|{}",
+        serde_json::to_string(&x).unwrap(),
+        serde_json::to_string(&y).unwrap(),
+        serde_json::to_string(&z).unwrap()
+    ))
+    .unwrap();
+    path
+}
+
+#[allow(dead_code)]
+pub fn read_dynamic(path: &PathBuf) -> (Vec<f64>, Vec<f64>, Vec<Vec<Vec<f64>>>) {
+    let mut file = File::open(path).unwrap();
+    let mut s = String::new();
+    file.read_to_string(&mut s).unwrap();
+    let mut s = s.split('|');
+    let x = serde_json::from_str(s.next().unwrap()).unwrap();
+    let y = serde_json::from_str(s.next().unwrap()).unwrap();
+    let z = serde_json::from_str(s.next().unwrap()).unwrap();
+    (x, y, z)
+}
+
+pub fn surface_static_plot(path: &PathBuf) {
+    print!("Drawing ...");
 
     let _res = Command::new("python3")
         .args([
@@ -110,11 +164,8 @@ pub fn surface_static_plot(x: &[f64], y: &[f64], z: &[Vec<f64>]) {
     );
 }
 
-pub fn surface_dynamic_plot(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>]) {
+pub fn surface_dynamic_plot(path: &PathBuf) {
     print!("Drawing ...");
-    let path = current_dir().unwrap().join("result_tmp");
-    let mut file = File::create(&path).unwrap();
-    file.write_fmt(format_args!("{x:?}|{y:?}|{z:?}")).unwrap();
 
     let _res = Command::new("python3")
         .args([
@@ -132,11 +183,52 @@ pub fn surface_dynamic_plot(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{surface_dynamic_plot, surface_static_plot};
+    use super::*;
+
+    #[test]
+    fn save_static_test() {
+        let x = vec![1_f64, 2_f64, 3_f64];
+        let y = vec![1_f64, 2_f64, 3_f64];
+        let z = vec![
+            vec![5_f64, 5_f64, 5_f64],
+            vec![5_f64, 5_f64, 5_f64],
+            vec![5_f64, 5_f64, 5_f64],
+        ];
+        let path = save_static(&x, &y, &z, "tmp");
+
+        let (x1, y1, z1) = read_static(&path);
+        assert_eq!(x, x1);
+        assert_eq!(y, y1);
+        assert_eq!(z, z1);
+    }
+
+    #[test]
+    fn save_dynamic_test() {
+        let x = vec![1_f64, 2_f64, 3_f64];
+        let y = vec![1_f64, 2_f64, 3_f64];
+        let z = vec![
+            vec![
+                vec![5_f64, 5_f64, 5_f64],
+                vec![5_f64, 5_f64, 5_f64],
+                vec![5_f64, 5_f64, 5_f64],
+            ],
+            vec![
+                vec![6_f64, 6_f64, 6_f64],
+                vec![6_f64, 6_f64, 6_f64],
+                vec![6_f64, 6_f64, 6_f64],
+            ],
+        ];
+        let path = save_dynamic(&x, &y, &z, "tmp");
+
+        let (x1, y1, z1) = read_dynamic(&path);
+        assert_eq!(x, x1);
+        assert_eq!(y, y1);
+        assert_eq!(z, z1);
+    }
 
     #[test]
     fn surface_static_plot_test() {
-        surface_static_plot(
+        let path = save_static(
             &vec![1_f64, 2_f64, 3_f64],
             &vec![1_f64, 2_f64, 3_f64],
             &vec![
@@ -144,12 +236,14 @@ mod tests {
                 vec![5_f64, 5_f64, 5_f64],
                 vec![5_f64, 5_f64, 5_f64],
             ],
+            "tmp",
         );
+        surface_static_plot(&path);
     }
 
     #[test]
     fn surface_dynamic_plot_test() {
-        surface_dynamic_plot(
+        let path = save_dynamic(
             &vec![1_f64, 2_f64, 3_f64],
             &vec![1_f64, 2_f64, 3_f64],
             &vec![
@@ -164,6 +258,9 @@ mod tests {
                     vec![6_f64, 6_f64, 6_f64],
                 ],
             ],
+            "tmp",
         );
+
+        surface_dynamic_plot(&path);
     }
 }

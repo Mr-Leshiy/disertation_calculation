@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.1.4", features = ["derive"] }
 rayon = { version = "1.7" }
+serde_json = { version = "1.0.96" }

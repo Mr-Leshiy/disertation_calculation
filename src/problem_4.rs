@@ -1,6 +1,6 @@
 use crate::{
     integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0, sum_calc, surface_dynamic_plot},
+    utils::{function_calculation, g, lambda, mu_0, save_dynamic, sum_calc, surface_dynamic_plot},
     FunctionType, LoadFunction,
 };
 use clap::Parser;
@@ -146,7 +146,9 @@ impl Problem4 {
             ),
         };
 
-        surface_dynamic_plot(&x, &y, &z);
+        let file_name = format!("problem_4, a: {0}, b: {1}, n_x: {2}, n_y: {3}, omega: {4}, c1: {5}, c2: {6}, puasson_coef: {7}, young_modulus: {8}, eps: {9}, function_type: {10}, load_function: {11}", self.a, self.b, self.n_x, self.n_y, self.omega, self.c1, self.c2, self.puasson_coef, self.young_modulus, self.eps, self.function_type, self.load_function);
+        let path = save_dynamic(&x, &y, &z, &file_name);
+        surface_dynamic_plot(&path);
     }
 }
 
