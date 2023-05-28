@@ -21,13 +21,12 @@ pub fn lambda(puasson_coef: f64, young_modulus: f64) -> f64 {
 }
 
 pub fn sum_calc<F: Fn(usize) -> f64 + Send + Sync>(
-    initial_value: f64,
     f: &F,
     eps: f64,
     start: usize,
     mut n: usize,
 ) -> f64 {
-    let mut result = initial_value;
+    let mut result = 0.0;
     let mut prev_result;
 
     result += (start..n).into_par_iter().map(|i| f(i)).sum::<f64>();
@@ -35,7 +34,7 @@ pub fn sum_calc<F: Fn(usize) -> f64 + Send + Sync>(
     loop {
         n *= 2;
         prev_result = result;
-        result = initial_value;
+        result = 0.0;
 
         result += (start..n).into_par_iter().map(|i| f(i)).sum::<f64>();
 
@@ -46,13 +45,8 @@ pub fn sum_calc<F: Fn(usize) -> f64 + Send + Sync>(
     result
 }
 
-pub fn sum_calc_finit<F: Fn(usize) -> f64 + Send + Sync>(
-    initial_value: f64,
-    f: &F,
-    start: usize,
-    n: usize,
-) -> f64 {
-    initial_value + (start..n).into_par_iter().map(|i| f(i)).sum::<f64>()
+pub fn sum_calc_finit<F: Fn(usize) -> f64 + Send + Sync>(f: &F, start: usize, n: usize) -> f64 {
+    (start..n).into_par_iter().map(|i| f(i)).sum::<f64>()
 }
 
 pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
@@ -70,9 +64,18 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     let h_t = t / n_t as f64;
 
     println!("Calculating ...\n");
-    let x: Vec<_> = (0..n_x + 1).into_par_iter().map(|i| i as f64 * h_x).collect();
-    let y: Vec<_> = (0..n_y + 1).into_par_iter().map(|i| i as f64 * h_y).collect();
-    let t: Vec<_> = (0..n_t + 1).into_par_iter().map(|i| i as f64 * h_t).collect();
+    let x: Vec<_> = (0..n_x + 1)
+        .into_par_iter()
+        .map(|i| i as f64 * h_x)
+        .collect();
+    let y: Vec<_> = (0..n_y + 1)
+        .into_par_iter()
+        .map(|i| i as f64 * h_y)
+        .collect();
+    let t: Vec<_> = (0..n_t + 1)
+        .into_par_iter()
+        .map(|i| i as f64 * h_t)
+        .collect();
 
     let z = t
         .into_par_iter()

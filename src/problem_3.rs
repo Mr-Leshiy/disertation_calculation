@@ -599,7 +599,7 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
             0.0
         }
     };
-    let sum = sum_calc_finit(0.0, &f, 0, 10);
+    let sum = sum_calc_finit(&f, 0, 10);
 
     a4 * sum / a2
 }
@@ -717,7 +717,7 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+    let pn = definite_integral(0.0, a, 100, eps, &|x| {
         load_function(x) * f64::cos(alpha * x)
     });
     let ((_, _, y_psi_3_0, y_psi_4_0), (_, _, y_psi_3_1, y_psi_4_1)) =
@@ -769,21 +769,20 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let initial_value = 0_f64;
     let n = 3;
     let start = 1;
     let f = |i| {
-        if x != a && x != 0_f64 {
+        if x != a && x != 0.0 {
             let alpha = PI / a * i as f64;
             2.0 * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
                 * f64::sin(alpha * x)
                 / a
         } else {
-            0_f64
+            0.0
         }
     };
 
-    sum_calc_finit(initial_value, &f, start, n)
+    sum_calc_finit(&f, start, n)
 }
 
 fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -797,7 +796,6 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let initial_value = 0_f64;
     let n = 3;
     let start = 1;
     let f = |i| {
@@ -812,7 +810,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
         }
     };
 
-    sum_calc_finit(initial_value, &f, start, n)
+    sum_calc_finit(&f, start, n)
 }
 
 fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
@@ -852,7 +850,6 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     let int_val = sqrt_gauss_integral_finit(4, &f) / 2.0;
     let v_0 = 2.0 * coef * int_val / a - y * p0 / a / (2.0 * g + lambda);
 
-    let initial_value = 0.0;
     let n = 3;
     let start = 1;
     let f = |i| {
@@ -861,7 +858,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
             / a
     };
 
-    v_0 + sum_calc_finit(initial_value, &f, start, n)
+    v_0 + sum_calc_finit(&f, start, n)
 }
 
 fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -875,7 +872,6 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let initial_value = 0_f64;
     let n = 3;
     let start = 1;
     let f = |i| {
@@ -885,7 +881,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
             / a
     };
 
-    sum_calc_finit(initial_value, &f, start, n)
+    sum_calc_finit(&f, start, n)
 }
 
 fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(

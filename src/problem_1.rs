@@ -230,7 +230,6 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let initial_value = 0_f64;
     let n = 10;
     let start = 1;
     let f = |i| {
@@ -246,7 +245,7 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
         }
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    sum_calc(&f, eps, start, n)
 }
 
 fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -260,7 +259,6 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let initial_value = 0_f64;
     let n = 10;
     let start = 1;
     let f = |i| {
@@ -277,7 +275,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
         }
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    sum_calc(&f, eps, start, n)
 }
 
 fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
@@ -292,7 +290,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let p0 = definite_integral(0_f64, a, 100, eps, load_function);
-    let initial_value = -p0 * y / a / (2_f64 * g + lambda);
+    let v0 = -p0 * y / a / (2_f64 * g + lambda);
     let n = 10;
     let start = 1;
     let f = |i| {
@@ -304,7 +302,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
             / (1_f64 + mu_0)
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    v0 + sum_calc(&f, eps, start, n)
 }
 
 fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -319,7 +317,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let p0 = definite_integral(0_f64, a, 100, eps, load_function);
-    let initial_value = -p0 * y / a / (2_f64 * g + lambda);
+    let v0 = -p0 * y / a / (2_f64 * g + lambda);
     let start = 1;
     let n = 10;
     let f = |i| {
@@ -331,7 +329,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
             / (1_f64 + mu_0)
     };
 
-    sum_calc(initial_value, &f, eps, start, n)
+    v0 + sum_calc(&f, eps, start, n)
 }
 
 fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
