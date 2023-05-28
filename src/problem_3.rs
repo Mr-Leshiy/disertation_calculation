@@ -1537,7 +1537,7 @@ mod tests {
         let load_function = |x| x * x;
         let eps = 0.1;
 
-        let x = 6.0;
+        let x = a;
         let y = 5.0;
 
         let function_u = function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps);
