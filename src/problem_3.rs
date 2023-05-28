@@ -417,6 +417,7 @@ fn der_psi_2(
 
 fn a_1<F: Fn(f64) -> f64 + Send + Sync>(a: f64, x: f64, load_function: &F, eps: f64) -> f64 {
     const N: i32 = 10;
+    let p0 = definite_integral(0_f64, a, 30, eps, load_function);
     let sum_fn = |t: f64| {
         if t == a {
             return 0.0;
@@ -424,7 +425,7 @@ fn a_1<F: Fn(f64) -> f64 + Send + Sync>(a: f64, x: f64, load_function: &F, eps: 
         let sum = (1..N)
             .into_par_iter()
             .map(|n| {
-                let alpha = PI / a * (n as f64 - 0.5);
+                let alpha = PI / a * n as f64;
                 f64::cos(alpha * t) * f64::cos(alpha * x)
             })
             .sum::<f64>();
@@ -436,12 +437,12 @@ fn a_1<F: Fn(f64) -> f64 + Send + Sync>(a: f64, x: f64, load_function: &F, eps: 
         0.0
     };
 
-    let res = 2.0 / a * sum - load_function(x);
+    let res = 2.0 / a * sum - load_function(x) + p0 / a;
     res
 }
 
 fn a_2(a: f64, b: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
-    2.0 * a * g * g * b * b * mu_0 * mu_0 / (PI * (1.0 + mu_0) * (g + lambda))
+    2.0 * a * g * b * b * mu_0 * mu_0 / (PI * (1.0 + mu_0) * (g + lambda))
 }
 
 fn a_3(a: f64, b: f64, x: f64, ksi: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
@@ -449,15 +450,15 @@ fn a_3(a: f64, b: f64, x: f64, ksi: f64, mu_0: f64, g: f64, lambda: f64) -> f64 
     let sum1 = (1..N)
         .into_par_iter()
         .map(|n| {
-            let alpha = PI / a * (n as f64 - 0.5);
+            let alpha = PI / a * n as f64;
             let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
             let a1 = sign * f64::exp(alpha * (ksi - 2.0 * b)) * f64::cos(alpha * x) / alpha;
-            let ((psi_1_0_ksi, _, psi_3_0_ksi, _), _) = psi_1(ksi, b, alpha, mu_0, g, lambda);
+            let ((_, psi_2_0_ksi, _, psi_4_0_ksi), _) = psi_1(ksi, b, alpha, mu_0, g, lambda);
             let (_, (psi_1_1_b, psi_2_1_b, _, _)) = psi_1(b, b, alpha, mu_0, g, lambda);
             let (_, (_, _, der_psi_3_1_b, der_psi_4_1_b)) = der_psi_1(b, b, alpha, mu_0, g, lambda);
-            let a2 = (der_psi_3_1_b * psi_1_0_ksi / alpha + der_psi_4_1_b * psi_3_0_ksi)
+            let a2 = (der_psi_3_1_b * psi_2_0_ksi / alpha + der_psi_4_1_b * psi_4_0_ksi)
                 * (2.0 * g + lambda)
-                + (psi_1_1_b * psi_1_0_ksi / alpha + psi_2_1_b * psi_3_0_ksi) * lambda;
+                + (psi_1_1_b * psi_2_0_ksi / alpha + psi_2_1_b * psi_4_0_ksi) * lambda;
 
             a1 * a2
         })
@@ -484,7 +485,7 @@ fn a_4(a: f64, b: f64, h: f64) -> f64 {
 }
 
 fn a_5(a: f64, b: f64, mu_0: f64) -> f64 {
-    4.0 * (1.0 + mu_0) * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+    -2.0 * (1.0 + mu_0) * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
 }
 
 fn f_m<F: Fn(f64) -> f64 + Send + Sync>(
@@ -519,6 +520,7 @@ fn g_k_m(m: usize, k: usize, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps
                     );
             let l = 2.0 * a / PI * f64::acos(l);
             let a_3 = a_3(a, b, h, l, mu_0, g, lambda);
+            let a_3 = 2.0 * a_3 + 2.0 * g + lambda;
             let a_2 = a_2(a, b, mu_0, g, lambda);
             a_3 * cheb / a_2
         };
@@ -563,7 +565,7 @@ fn phi<F: Fn(f64) -> f64 + Send + Sync>(
                 .into_par_iter()
                 .map(|k| {
                     if m == k {
-                        g_k_m[k][m] + PI / 8_f64 / (2.0 * m as f64 + 1_f64)
+                        g_k_m[k][m] + PI / 4.0 / (2.0 * m as f64 + 1_f64)
                     } else {
                         g_k_m[k][m]
                     }
@@ -594,10 +596,10 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
         if i < phi.m() {
             phi.get_element(0, i) * chebyshev(h, 2 * i + 1)
         } else {
-            0_f64
+            0.0
         }
     };
-    let sum = sum_calc_finit(0_f64, &f, 0, 10);
+    let sum = sum_calc_finit(0.0, &f, 0, 10);
 
     a4 * sum / a2
 }
@@ -636,22 +638,19 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
                     ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
                         + f64::cosh(PI * b / (2.0 * a)),
                 );
-        let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
+        let ((_, h_psi_2_0, _, h_psi_4_0), (_, h_psi_2_1, _, h_psi_4_1)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g1 = if y < h {
-            (y_psi_1_0 * h_psi_1_1 + y_psi_2_0 * h_psi_3_1) / alpha / alpha / alpha
+            (y_psi_1_0 * h_psi_2_1 + y_psi_2_0 * h_psi_4_1) / alpha / alpha / alpha
         } else {
-            (y_psi_1_1 * h_psi_1_0 + y_psi_2_1 * h_psi_3_0) / alpha / alpha / alpha
+            (y_psi_1_1 * h_psi_2_0 + y_psi_2_1 * h_psi_4_0) / alpha / alpha / alpha
         };
         f_val * g1 / a1
     };
     let int_val = sqrt_gauss_integral_finit(4, &f) / 2.0;
-    let coef = (-1_f64 - mu_0)
-        * f64::sin(alpha * a)
-        * 2.0
-        * a
-        * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
-        / PI;
+    let coef =
+        f64::cos(alpha * a) * 2.0 * a * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+            / PI;
     coef * int_val - y_psi_2_0 * pn
 }
 
@@ -689,23 +688,20 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
                     ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
                         + f64::cosh(PI * b / (2.0 * a)),
                 );
-        let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
+        let ((_, h_psi_2_0, _, h_psi_4_0), (_, h_psi_2_1, _, h_psi_4_1)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g3 = if y < h {
-            (y_psi_3_0 * h_psi_1_1 + y_psi_4_0 * h_psi_3_1) / alpha / alpha / alpha
+            (y_psi_3_0 * h_psi_2_1 + y_psi_4_0 * h_psi_4_1) / alpha / alpha / alpha
         } else {
-            (y_psi_3_1 * h_psi_1_0 + y_psi_4_1 * h_psi_3_0) / alpha / alpha / alpha
+            (y_psi_3_1 * h_psi_2_0 + y_psi_4_1 * h_psi_4_0) / alpha / alpha / alpha
         };
 
         g3 * f_val / a1
     };
     let int_val = sqrt_gauss_integral(20, eps, &f) / 2.0;
-    let coef = (-1_f64 - mu_0)
-        * f64::sin(alpha * a)
-        * 2.0
-        * a
-        * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
-        / PI;
+    let coef =
+        f64::cos(alpha * a) * 2.0 * a * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+            / PI;
 
     coef * int_val * int_val - y_psi_4_0 * pn
 }
@@ -744,23 +740,20 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
                     ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
                         + f64::cosh(PI * b / (2.0 * a)),
                 );
-        let ((h_psi_1_0, _, h_psi_3_0, __), (h_psi_1_1, _, h_psi_3_1, _)) =
+        let ((_, h_psi_2_0, _, h_psi_4_0), (_, h_psi_2_1, _, h_psi_4_1)) =
             psi_2(h, b, alpha, mu_0, g, lambda);
         let g3 = if y < h {
-            (y_psi_3_0 * h_psi_1_1 + y_psi_4_0 * h_psi_3_1) / alpha / alpha / alpha
+            (y_psi_3_0 * h_psi_2_1 + y_psi_4_0 * h_psi_4_1) / alpha / alpha / alpha
         } else {
-            (y_psi_3_1 * h_psi_1_0 + y_psi_4_1 * h_psi_3_0) / alpha / alpha / alpha
+            (y_psi_3_1 * h_psi_2_0 + y_psi_4_1 * h_psi_4_0) / alpha / alpha / alpha
         };
 
         g3 * f_val / a1
     };
     let int_val = sqrt_gauss_integral(20, eps, &f) / 2.0;
-    let coef = (-1_f64 - mu_0)
-        * f64::sin(alpha * a)
-        * 2.0
-        * a
-        * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
-        / PI;
+    let coef =
+        f64::cos(alpha * a) * 2.0 * a * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+            / PI;
 
     coef * int_val * int_val - y_psi_4_0 * pn
 }
@@ -781,7 +774,7 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let start = 1;
     let f = |i| {
         if x != a && x != 0_f64 {
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
             2.0 * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
                 * f64::sin(alpha * x)
                 / a
@@ -809,7 +802,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     let start = 1;
     let f = |i| {
         if x != a && x != 0_f64 {
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
             2.0 * alpha
                 * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
                 * f64::cos(alpha * x)
@@ -833,16 +826,42 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let initial_value = 0_f64;
+    let p0 = definite_integral(0_f64, a, 30, eps, load_function);
+    let f = |ksi: f64| {
+        let ksi = f64::abs(ksi);
+        let f_val = unknown_function(ksi, a, b, mu_0, g, lambda, load_function, eps);
+        let a1 = f64::sqrt(
+            ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                + f64::cosh(PI * b / (2.0 * a))
+                - 1.0,
+        ) * f64::sqrt(
+            ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                + f64::cosh(PI * b / (2.0 * a))
+                + 1.0,
+        );
+        let h = 2.0 * b
+            - 2.0 * a / PI
+                * f64::acosh(
+                    ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                        + f64::cosh(PI * b / (2.0 * a)),
+                );
+        let g = if y < h { -y } else { -h };
+        f_val * g / a1
+    };
+    let coef = 2.0 * a * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a))) / PI;
+    let int_val = sqrt_gauss_integral_finit(4, &f) / 2.0;
+    let v_0 = 2.0 * coef * int_val / a - y * p0 / a / (2.0 * g + lambda);
+
+    let initial_value = 0.0;
     let n = 3;
     let start = 1;
     let f = |i| {
-        let alpha = PI / a * (i as f64 - 0.5);
+        let alpha = PI / a * i as f64;
         2.0 * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps) * f64::cos(alpha * x)
             / a
     };
 
-    sum_calc_finit(initial_value, &f, start, n)
+    v_0 + sum_calc_finit(initial_value, &f, start, n)
 }
 
 fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -860,7 +879,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     let n = 3;
     let start = 1;
     let f = |i| {
-        let alpha = PI / a * (i as f64 - 0.5);
+        let alpha = PI / a * i as f64;
         2.0 * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
             * f64::cos(alpha * x)
             / a
@@ -1021,7 +1040,7 @@ mod tests {
 
         for i in 2..5 {
             println!("-----");
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
 
             let e1 = f64::exp(alpha * b);
             let e2 = f64::exp(-alpha * b);
@@ -1137,7 +1156,7 @@ mod tests {
 
         for i in 2..1000 {
             println!("-----");
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
 
             let (
                 (d_1_0, d_2_0, d_3_0, d_4_0, f_1_0, f_2_0, f_3_0, f_4_0),
@@ -1222,7 +1241,7 @@ mod tests {
         let x = 1.0;
         for i in 0..1111 {
             println!("----");
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
 
             let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
                 psi_1(x, b, alpha, mu_0, g, lambda);
@@ -1272,7 +1291,7 @@ mod tests {
             let x = x as f64;
             for i in 2..20 {
                 println!("----");
-                let alpha = PI / a * (i as f64 - 0.5);
+                let alpha = PI / a * i as f64;
 
                 let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
                     psi_2(x, b, alpha, mu_0, g, lambda);
@@ -1337,7 +1356,7 @@ mod tests {
 
         for i in 1..20 {
             println!("----");
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
 
             let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
                 psi_2(b, b, alpha, mu_0, g, lambda);
@@ -1381,7 +1400,7 @@ mod tests {
 
         for i in 1..20 {
             println!("----");
-            let alpha = PI / a * (i as f64 - 0.5);
+            let alpha = PI / a * i as f64;
 
             let ((_, _, psi_3_0, psi_4_0), (_, _, psi_3_1, psi_4_1)) =
                 psi_2(0_f64, b, alpha, mu_0, g, lambda);
@@ -1520,7 +1539,7 @@ mod tests {
 
         let y = 5.0;
         let n = 1;
-        let alpha = PI / a * (n as f64 - 0.5);
+        let alpha = PI / a * n as f64;
         let function_un = function_un(a, b, y, alpha, mu_0, g, lambda, &load_function, eps);
         println!("{function_un}");
     }
@@ -1537,7 +1556,7 @@ mod tests {
         let load_function = |x| x * x;
         let eps = 0.1;
 
-        let x = a;
+        let x = 9.9;
         let y = 5.0;
 
         let function_u = function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps);
