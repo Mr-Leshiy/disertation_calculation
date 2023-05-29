@@ -872,6 +872,32 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
+    let p0 = definite_integral(0_f64, a, 30, eps, load_function);
+    let f = |ksi: f64| {
+        let ksi = f64::abs(ksi);
+        let f_val = unknown_function(ksi, a, b, mu_0, g, lambda, load_function, eps);
+        let a1 = f64::sqrt(
+            ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                + f64::cosh(PI * b / (2.0 * a))
+                - 1.0,
+        ) * f64::sqrt(
+            ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                + f64::cosh(PI * b / (2.0 * a))
+                + 1.0,
+        );
+        let h = 2.0 * b
+            - 2.0 * a / PI
+                * f64::acosh(
+                    ksi * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a)))
+                        + f64::cosh(PI * b / (2.0 * a)),
+                );
+        let g = if y < h { -1.0 } else { 0.0 };
+        f_val * g / a1
+    };
+    let coef = 2.0 * a * (f64::cosh(PI * b / a) - f64::cosh(PI * b / (2.0 * a))) / PI;
+    let int_val = sqrt_gauss_integral_finit(4, &f) / 2.0;
+    let v_0 = 2.0 * coef * int_val / a - p0 / a / (2.0 * g + lambda);
+
     let n = 3;
     let start = 1;
     let f = |i| {
@@ -881,7 +907,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
             / a
     };
 
-    sum_calc_finit(&f, start, n)
+    v_0 + sum_calc_finit(&f, start, n)
 }
 
 fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -1552,7 +1578,7 @@ mod tests {
         let load_function = |x| x * x;
         let eps = 0.1;
 
-        let x = 9.9;
+        let x = 9.5;
         let y = 5.0;
 
         let function_u = function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps);
