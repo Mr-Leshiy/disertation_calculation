@@ -56,11 +56,11 @@ function v
 ```
 function sigma x
 ```
-./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_x
+./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=sigma_x
 ```
 function sigma y
 ```
-./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_y
+./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=sigma_y
 ```
 
 ## Problem 4
