@@ -152,30 +152,20 @@ impl Problem3 {
     }
 }
 
-fn a_coefficients(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (f64, f64) {
-    let x1 = 2_f64 * alpha * alpha * c1 * c1 * c2 * c2 * mu_0
-        + 2_f64 * alpha * alpha * c1 * c1 * c2 * c2
-        - c1 * c1 * omega * omega
-        - c2 * c2 * mu_0 * omega * omega
-        - c2 * c2 * omega * omega;
+fn det_roots(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (f64, f64) {
+    let a1 = -2.0 * alpha * alpha + omega * omega / c2 / c2 - 2.0 * alpha * alpha * mu_0
+        + omega * omega / c1 / c1
+        + mu_0 * omega * omega / c1 / c1;
+    let a2 = alpha * alpha * alpha * alpha - alpha * alpha * omega * omega / c2 / c2
+        + alpha * alpha * alpha * alpha * mu_0
+        - alpha * alpha * mu_0 * omega * omega / c2 / c2
+        - alpha * alpha * omega * omega / c2 / c2
+        + omega * omega * omega * omega / c1 / c1 / c2 / c2;
 
-    let x2 = 4_f64 * alpha * alpha * c1 * c1 * c1 * c1 * c2 * c2 * mu_0 * mu_0
-        + 4_f64 * alpha * alpha * c1 * c1 * c1 * c1 * c2 * c2 * mu_0
-        - 4_f64 * alpha * alpha * c1 * c1 * c2 * c2 * c2 * c2 * mu_0 * mu_0
-        - 4_f64 * alpha * alpha * c1 * c1 * c2 * c2 * c2 * c2 * mu_0
-        + c1 * c1 * c1 * c1 * omega * omega
-        - 2_f64 * c1 * c1 * c2 * c2 * mu_0 * omega * omega
-        - 2_f64 * c1 * c1 * c2 * c2 * omega * omega
-        + c2 * c2 * c2 * c2 * mu_0 * mu_0 * omega * omega
-        + 2_f64 * c2 * c2 * c2 * c2 * omega * omega * mu_0
-        + c2 * c2 * c2 * c2 * omega * omega;
+    let s1 = f64::sqrt((-a1 + f64::sqrt(a1 * a1 - 4.0 * (1.0 + mu_0) * a2)) / (2.0 * (1.0 + mu_0)));
+    let s2 = f64::sqrt((-a1 - f64::sqrt(a1 * a1 - 4.0 * (1.0 + mu_0) * a2)) / (2.0 * (1.0 + mu_0)));
 
-    let x3 = 2_f64 * c1 * c1 * c2 * c2 * mu_0 + 2_f64 * c1 * c1 * c2 * c2;
-
-    let a1 = -f64::sqrt((x1 - omega * f64::sqrt(x2)) / x3);
-    let a3 = -f64::sqrt((x1 + omega * f64::sqrt(x2)) / x3);
-
-    (a1, a3)
+    (s1, s2)
 }
 
 fn c_coefficients<F: Fn(f64) -> f64 + Send + Sync>(
@@ -240,7 +230,7 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+    let (a1, a3) = det_roots(omega, c1, c2, alpha, mu_0);
 
     let e1 = f64::exp(a1 * y);
     let e2 = f64::exp(-a1 * y);
@@ -289,18 +279,18 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+    let (s1, s2) = det_roots(omega, c1, c2, alpha, mu_0);
 
-    let e1 = f64::exp(a1 * y);
-    let e2 = f64::exp(-a1 * y);
-    let e3 = f64::exp(a3 * y);
-    let e4 = f64::exp(-a3 * y);
+    let e1 = f64::exp(s1 * y);
+    let e2 = f64::exp(-s1 * y);
+    let e3 = f64::exp(s2 * y);
+    let e4 = f64::exp(-s2 * y);
 
     let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
         b,
-        a1,
-        a3,
+        s1,
+        s2,
         omega,
         c1,
         c2,
@@ -312,16 +302,16 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
         eps,
     );
 
-    let res = c_1 * (-a1 * alpha * mu_0) * (e1 + e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+    let res = c_1 * (-s1 * alpha * mu_0) * (e1 + e2) / (2_f64 * s1 * (s1 * s1 - s2 * s2))
         + c_2
-            * (a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+            * (s1 * s1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
             * (e1 - e2)
-            / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c_3 * (-a3 * alpha * mu_0) * (e3 + e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1))
+            / (2_f64 * s1 * (s1 * s1 - s2 * s2))
+        + c_3 * (-s2 * alpha * mu_0) * (e3 + e4) / (2_f64 * s2 * (s2 * s2 - s1 * s1))
         + c_4
-            * (a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+            * (s2 * s2 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
             * (e3 - e4)
-            / (2_f64 * a3 * (a3 * a3 - a1 * a1));
+            / (2_f64 * s2 * (s2 * s2 - s1 * s1));
 
     res
 }
@@ -340,18 +330,18 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+    let (s1, s2) = det_roots(omega, c1, c2, alpha, mu_0);
 
-    let e1 = f64::exp(a1 * y);
-    let e2 = f64::exp(-a1 * y);
-    let e3 = f64::exp(a3 * y);
-    let e4 = f64::exp(-a3 * y);
+    let e1 = f64::exp(s1 * y);
+    let e2 = f64::exp(-s1 * y);
+    let e3 = f64::exp(s2 * y);
+    let e4 = f64::exp(-s2 * y);
 
     let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
         b,
-        a1,
-        a3,
+        s1,
+        s2,
         omega,
         c1,
         c2,
@@ -363,18 +353,18 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
         eps,
     );
 
-    let res = c_1 * (-a1 * alpha * mu_0) * a1 * (e1 - e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+    let res = c_1 * (-s1 * alpha * mu_0) * s1 * (e1 - e2) / (2_f64 * s1 * (s1 * s1 - s2 * s2))
         + c_2
-            * (a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
-            * a1
+            * (s1 * s1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+            * s1
             * (e1 + e2)
-            / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c_3 * (-a3 * alpha * mu_0) * a3 * (e3 - e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1))
+            / (2_f64 * s1 * (s1 * s1 - s2 * s2))
+        + c_3 * (-s2 * alpha * mu_0) * s2 * (e3 - e4) / (2_f64 * s2 * (s2 * s2 - s1 * s1))
         + c_4
-            * (a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
-            * a3
+            * (s2 * s2 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
+            * s2
             * (e3 + e4)
-            / (2_f64 * a3 * (a3 * a3 - a1 * a1));
+            / (2_f64 * s2 * (s2 * s2 - s1 * s1));
 
     res
 }
@@ -421,7 +411,6 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
                 * f64::sin(alpha * x)
                 * cos_t
                 / a
-                / (1_f64 + mu_0)
         } else {
             0_f64
         }
@@ -473,7 +462,6 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
                 * f64::cos(alpha * x)
                 * cos_t
                 / a
-                / (1_f64 + mu_0)
         } else {
             0_f64
         }
@@ -529,7 +517,6 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
             * f64::cos(alpha * x)
             * cos_t
             / a
-            / (1_f64 + mu_0)
     };
 
     v0 + sum_calc(&f, eps, start, n)
@@ -582,7 +569,6 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
             * f64::cos(alpha * x)
             * cos_t
             / a
-            / (1_f64 + mu_0)
     };
 
     v0 + sum_calc(&f, eps, start, n)
@@ -691,7 +677,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_coefficients_test() {
+    fn det_roots_test() {
         let a = 10_f64;
         let omega = 0.75;
         let c1 = 10_f64;
@@ -704,7 +690,7 @@ mod tests {
         for i in 1..10 {
             let alpha = PI * i as f64 / a;
 
-            let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+            let (s1, s2) = det_roots(omega, c1, c2, alpha, mu_0);
 
             let func = |s: f64| {
                 (s * s - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
@@ -713,27 +699,27 @@ mod tests {
             };
 
             assert!(
-                f64::abs(func(a1) - 0_f64) < eps,
+                f64::abs(func(s1) - 0_f64) < eps,
                 "result: {}, exp: {}",
-                func(a1),
+                func(s1),
                 0_f64
             );
             assert!(
-                f64::abs(func(-a1) - 0_f64) < eps,
+                f64::abs(func(-s1) - 0_f64) < eps,
                 "result: {}, exp: {}",
-                func(-a1),
+                func(-s1),
                 0_f64
             );
             assert!(
-                f64::abs(func(a3) - 0_f64) < eps,
+                f64::abs(func(s2) - 0_f64) < eps,
                 "result: {}, exp: {}",
-                func(a3),
+                func(s2),
                 0_f64
             );
             assert!(
-                f64::abs(func(-a3) - 0_f64) < eps,
+                f64::abs(func(-s2) - 0_f64) < eps,
                 "result: {}, exp: {}",
-                func(-a3),
+                func(-s2),
                 0_f64
             );
         }
@@ -758,7 +744,7 @@ mod tests {
         for i in 1..10 {
             let alpha = PI * i as f64 / a;
 
-            let (a1, a3) = a_coefficients(omega, c1, c2, alpha, mu_0);
+            let (a1, a3) = det_roots(omega, c1, c2, alpha, mu_0);
 
             let pn = definite_integral(0_f64, a, 100, eps, &|x| {
                 load_function(x) * f64::cos(alpha * x)
