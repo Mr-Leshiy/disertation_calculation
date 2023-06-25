@@ -27,55 +27,55 @@ function sigma y
 ```
 ./target/release/calculation problem1 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_y
 ```
-## Problem 2
+## Problem 1_2
 function u
 ```
-./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=u
+./target/release/calculation problem1_2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=u
 ```
 function v
 ```
-./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=v
+./target/release/calculation problem1_2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=v
 ```
 function sigma x
 ```
-./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_x
+./target/release/calculation problem1_2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_x
 ```
 function sigma y
 ```
-./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_y
+./target/release/calculation problem1_2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0001 --function_type=sigma_y
+```
+
+## Problem 2
+function u
+```
+./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=u
+```
+function v
+```
+./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=v
+```
+function sigma x
+```
+./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=sigma_x
+```
+function sigma y
+```
+./target/release/calculation problem2 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=sigma_y
 ```
 
 ## Problem 3
 function u
 ```
-./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=100 --n_y=10 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=u
+./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=u
 ```
 function v
 ```
-./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=v
+./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=v
 ```
 function sigma x
 ```
-./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=sigma_x
+./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=sigma_x
 ```
 function sigma y
 ```
-./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --n_x=50 --n_y=20 --puasson_coef=0.25 --young_modulus=200 --eps=0.1 --function_type=sigma_y
-```
-
-## Problem 4
-function u
-```
-./target/release/calculation problem4 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=u
-```
-function v
-```
-./target/release/calculation problem4 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=v
-```
-function sigma x
-```
-./target/release/calculation problem4 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=sigma_x
-```
-function sigma y
-```
-./target/release/calculation problem4 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=sigma_y
+./target/release/calculation problem3 --load_function=type1 --a=10 --b=15 --t=10 --n_x=100 --n_y=10 --n_t=100 --puasson_coef=0.25 --young_modulus=200 --omega=0.75 --c1=10 --c2=10 --eps=0001 --function_type=sigma_y
