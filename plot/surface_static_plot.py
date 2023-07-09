@@ -26,6 +26,6 @@ ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
 plt.legend()
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
-ax.set_zlabel("function")
+ax.set_zlabel("sigma_y(x,y)")
 
 plt.show()

@@ -31,8 +31,6 @@ pub struct Problem1 {
 
 impl Problem1 {
     pub fn exec(self) {
-        assert!(self.a < self.b);
-
         let mu_0 = mu_0(self.puasson_coef);
         let g = g(self.puasson_coef, self.young_modulus);
         let lambda = lambda(self.puasson_coef, self.young_modulus);

@@ -1,12 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::fmt::Display;
-
 use clap::{Parser, ValueEnum};
 use problem_1::Problem1;
 use problem_1_2::Problem1_2;
 use problem_2::Problem2;
-use problem_3::Problem3;
+use problem_3::{Problem3, Problem3Part};
+use std::fmt::Display;
 
 mod integration;
 mod matrices;
@@ -24,6 +23,7 @@ pub enum Cli {
     Problem1_2(Problem1_2),
     Problem2(Problem2),
     Problem3(Problem3),
+    Problem3Part(Problem3Part),
 }
 
 #[derive(Parser, Clone, ValueEnum)]
@@ -76,10 +76,11 @@ impl LoadFunction {
 impl Cli {
     fn exec(self) {
         match self {
-            Self::Problem1(problem1) => problem1.exec(),
-            Self::Problem1_2(problem2) => problem2.exec(),
-            Self::Problem2(problem3) => problem3.exec(),
-            Self::Problem3(problem4) => problem4.exec(),
+            Self::Problem1(p) => p.exec(),
+            Self::Problem1_2(p) => p.exec(),
+            Self::Problem2(p) => p.exec(),
+            Self::Problem3(p) => p.exec(),
+            Self::Problem3Part(p) => p.exec(),
         }
     }
 }
