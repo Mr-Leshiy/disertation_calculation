@@ -1,11 +1,5 @@
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
-use std::{
-    env::current_dir,
-    fs::File,
-    io::{Read, Write},
-    path::PathBuf,
-    process::Command,
-};
+use std::{env::current_dir, fs::File, io::Write, path::PathBuf, process::Command};
 
 // calculate Lamme's coefficient G value
 pub fn g(puasson_coef: f64, young_modulus: f64) -> f64 {
@@ -97,7 +91,48 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
                 .collect()
         })
         .collect();
+    println!("Finished calculation");
     (x, y, z)
+}
+
+pub fn function_calculation2<F: Fn(f64) -> f64 + Send + Sync>(
+    omega_1: f64,
+    omega_2: f64,
+    n_omega: u32,
+    f: F,
+) -> (Vec<f64>, Vec<f64>) {
+    let h_omega = (omega_2 - omega_1) / n_omega as f64;
+
+    println!("Calculating ...\n");
+    let omega: Vec<_> = (0..n_omega + 1)
+        .into_par_iter()
+        .map(|i| i as f64 * h_omega + omega_1)
+        .collect();
+
+    let z = omega
+        .clone()
+        .into_iter()
+        .map(|omega| {
+            println!("{omega} - start");
+            let res = f(omega);
+            println!("{omega} - done");
+            res
+        })
+        .collect();
+    println!("Finished calculation");
+    (omega, z)
+}
+
+pub fn save_freq(omega: &[f64], z: &[f64], file_name: &str) -> PathBuf {
+    let path = current_dir().unwrap().join(file_name);
+    let mut file = File::create(&path).unwrap();
+    file.write_fmt(format_args!(
+        "{}|{}",
+        serde_json::to_string(&omega).unwrap(),
+        serde_json::to_string(&z).unwrap()
+    ))
+    .unwrap();
+    path
 }
 
 pub fn save_static(x: &[f64], y: &[f64], z: &[Vec<f64>], file_name: &str) -> PathBuf {
@@ -113,18 +148,6 @@ pub fn save_static(x: &[f64], y: &[f64], z: &[Vec<f64>], file_name: &str) -> Pat
     path
 }
 
-#[allow(dead_code)]
-pub fn read_static(path: &PathBuf) -> (Vec<f64>, Vec<f64>, Vec<Vec<f64>>) {
-    let mut file = File::open(path).unwrap();
-    let mut s = String::new();
-    file.read_to_string(&mut s).unwrap();
-    let mut s = s.split('|');
-    let x = serde_json::from_str(s.next().unwrap()).unwrap();
-    let y = serde_json::from_str(s.next().unwrap()).unwrap();
-    let z = serde_json::from_str(s.next().unwrap()).unwrap();
-    (x, y, z)
-}
-
 pub fn save_dynamic(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>], file_name: &str) -> PathBuf {
     let path = current_dir().unwrap().join(file_name);
     let mut file = File::create(&path).unwrap();
@@ -138,16 +161,21 @@ pub fn save_dynamic(x: &[f64], y: &[f64], z: &[Vec<Vec<f64>>], file_name: &str) 
     path
 }
 
-#[allow(dead_code)]
-pub fn read_dynamic(path: &PathBuf) -> (Vec<f64>, Vec<f64>, Vec<Vec<Vec<f64>>>) {
-    let mut file = File::open(path).unwrap();
-    let mut s = String::new();
-    file.read_to_string(&mut s).unwrap();
-    let mut s = s.split('|');
-    let x = serde_json::from_str(s.next().unwrap()).unwrap();
-    let y = serde_json::from_str(s.next().unwrap()).unwrap();
-    let z = serde_json::from_str(s.next().unwrap()).unwrap();
-    (x, y, z)
+pub fn function_plot(path: &PathBuf) {
+    print!("Drawing ...");
+
+    let _res = Command::new("python3")
+        .args([
+            "plot/function_plot.py",
+            format!("-p={}", path.to_str().unwrap()).as_str(),
+        ])
+        .output()
+        .unwrap();
+    println!(
+        "stout: {}, stderr: {}",
+        String::from_utf8(_res.stdout).unwrap(),
+        String::from_utf8(_res.stderr).unwrap()
+    );
 }
 
 pub fn surface_static_plot(path: &PathBuf) {
@@ -189,44 +217,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn save_static_test() {
-        let x = vec![1_f64, 2_f64, 3_f64];
-        let y = vec![1_f64, 2_f64, 3_f64];
-        let z = vec![
-            vec![5_f64, 5_f64, 5_f64],
-            vec![5_f64, 5_f64, 5_f64],
-            vec![5_f64, 5_f64, 5_f64],
-        ];
-        let path = save_static(&x, &y, &z, "tmp");
-
-        let (x1, y1, z1) = read_static(&path);
-        assert_eq!(x, x1);
-        assert_eq!(y, y1);
-        assert_eq!(z, z1);
-    }
-
-    #[test]
-    fn save_dynamic_test() {
-        let x = vec![1_f64, 2_f64, 3_f64];
-        let y = vec![1_f64, 2_f64, 3_f64];
-        let z = vec![
-            vec![
-                vec![5_f64, 5_f64, 5_f64],
-                vec![5_f64, 5_f64, 5_f64],
-                vec![5_f64, 5_f64, 5_f64],
-            ],
-            vec![
-                vec![6_f64, 6_f64, 6_f64],
-                vec![6_f64, 6_f64, 6_f64],
-                vec![6_f64, 6_f64, 6_f64],
-            ],
-        ];
-        let path = save_dynamic(&x, &y, &z, "tmp");
-
-        let (x1, y1, z1) = read_dynamic(&path);
-        assert_eq!(x, x1);
-        assert_eq!(y, y1);
-        assert_eq!(z, z1);
+    fn function_plot_test() {
+        let path = save_freq(
+            &vec![1_f64, 2_f64, 3_f64],
+            &vec![1_f64, 2_f64, 3_f64],
+            "tmp",
+        );
+        function_plot(&path);
     }
 
     #[test]

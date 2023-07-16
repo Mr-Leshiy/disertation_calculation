@@ -1,8 +1,8 @@
 use crate::{
     integration::definite_integral,
     utils::{
-        function_calculation, g, lambda, mu_0, save_dynamic, save_static, sum_calc,
-        surface_dynamic_plot, surface_static_plot,
+        function_calculation, function_calculation2, g, lambda, mu_0, save_dynamic, save_freq,
+        save_static, sum_calc, surface_dynamic_plot, surface_static_plot, function_plot,
     },
     FunctionType, LoadFunction,
 };
@@ -57,6 +57,41 @@ pub struct Problem3Part {
     n_y: u32,
     #[clap(long)]
     omega: f64,
+    #[clap(long)]
+    c1: f64,
+    #[clap(long)]
+    c2: f64,
+    #[clap(long)]
+    puasson_coef: f64,
+    #[clap(long)]
+    young_modulus: f64,
+    #[clap(long)]
+    eps: f64,
+    #[clap(long)]
+    function_type: FunctionType,
+    #[clap(long)]
+    load_function: LoadFunction,
+}
+
+#[derive(Parser)]
+#[clap(rename_all = "snake-case")]
+pub struct Problem3Freq {
+    #[clap(long)]
+    a: f64,
+    #[clap(long)]
+    b: f64,
+    #[clap(long)]
+    x: f64,
+    #[clap(long)]
+    y: f64,
+    #[clap(long)]
+    t: f64,
+    #[clap(long)]
+    omega_1: f64,
+    #[clap(long)]
+    omega_2: f64,
+    #[clap(long)]
+    n_omega: u32,
     #[clap(long)]
     c1: f64,
     #[clap(long)]
@@ -272,6 +307,97 @@ impl Problem3Part {
         let file_name = format!("problem_3_part, a: {0}, b: {1}, n_x: {2}, n_y: {3}, omega: {4}, c1: {5}, c2: {6}, puasson_coef: {7}, young_modulus: {8}, eps: {9}, function_type: {10}, load_function: {11}, t: {12}", self.a, self.b, self.n_x, self.n_y, self.omega, self.c1, self.c2, self.puasson_coef, self.young_modulus, self.eps, self.function_type, self.load_function, self.t);
         let path = save_static(&x, &y, &z[0], &file_name);
         surface_static_plot(&path);
+    }
+}
+
+impl Problem3Freq {
+    pub fn exec(self) {
+        let mu_0 = mu_0(self.puasson_coef);
+        let g = g(self.puasson_coef, self.young_modulus);
+        let lambda = lambda(self.puasson_coef, self.young_modulus);
+
+        let (omega, z) = match self.function_type {
+            FunctionType::U => {
+                function_calculation2(self.omega_1, self.omega_2, self.n_omega, |omega| {
+                    function_u(
+                        self.a,
+                        self.b,
+                        self.x,
+                        self.y,
+                        self.t,
+                        omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
+            }
+            FunctionType::V => {
+                function_calculation2(self.omega_1, self.omega_2, self.n_omega, |omega| {
+                    function_v(
+                        self.a,
+                        self.b,
+                        self.x,
+                        self.y,
+                        self.t,
+                        omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
+            }
+            FunctionType::SigmaX => {
+                function_calculation2(self.omega_1, self.omega_2, self.n_omega, |omega| {
+                    function_sigma_x(
+                        self.a,
+                        self.b,
+                        self.x,
+                        self.y,
+                        self.t,
+                        omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
+            }
+            FunctionType::SigmaY => {
+                function_calculation2(self.omega_1, self.omega_2, self.n_omega, |omega| {
+                    function_sigma_y(
+                        self.a,
+                        self.b,
+                        self.x,
+                        self.y,
+                        self.t,
+                        omega,
+                        self.c1,
+                        self.c2,
+                        mu_0,
+                        g,
+                        lambda,
+                        &|x| self.load_function.call(x),
+                        self.eps,
+                    )
+                })
+            }
+        };
+
+        let file_name = format!("problem_3_freq, a: {0}, b: {1}, x: {2}, y: {3}, t: {4}, omega_1: {5}, omega_2: {6}, n_omega: {7},  c1: {8}, c2: {9}, puasson_coef: {10}, young_modulus: {11}, eps: {12}, function_type: {13}, load_function: {14}", self.a, self.b, self.x, self.y, self.t, self.omega_1, self.omega_2, self.n_omega, self.c1, self.c2, self.puasson_coef, self.young_modulus, self.eps, self.function_type, self.load_function);
+        let path = save_freq(&omega, &z, &file_name);
+        function_plot(&path);
     }
 }
 

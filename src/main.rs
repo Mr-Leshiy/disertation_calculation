@@ -4,7 +4,7 @@ use clap::{Parser, ValueEnum};
 use problem_1::Problem1;
 use problem_1_2::Problem1_2;
 use problem_2::Problem2;
-use problem_3::{Problem3, Problem3Part};
+use problem_3::{Problem3, Problem3Freq, Problem3Part};
 use std::fmt::Display;
 
 mod integration;
@@ -24,6 +24,7 @@ pub enum Cli {
     Problem2(Problem2),
     Problem3(Problem3),
     Problem3Part(Problem3Part),
+    Problem3Freq(Problem3Freq),
 }
 
 #[derive(Parser, Clone, ValueEnum)]
@@ -81,6 +82,7 @@ impl Cli {
             Self::Problem2(p) => p.exec(),
             Self::Problem3(p) => p.exec(),
             Self::Problem3Part(p) => p.exec(),
+            Self::Problem3Freq(p) => p.exec(),
         }
     }
 }
