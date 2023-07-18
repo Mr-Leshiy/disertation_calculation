@@ -1,12 +1,13 @@
 use crate::{
     integration::definite_integral,
     utils::{
-        function_calculation, function_calculation2, g, lambda, mu_0, save_dynamic, save_freq,
-        save_static, sum_calc, surface_dynamic_plot, surface_static_plot, function_plot,
+        function_calculation, function_calculation2, function_plot, g, lambda, mu_0, save_dynamic,
+        save_freq, save_static, sum_calc, surface_dynamic_plot, surface_static_plot,
     },
     FunctionType, LoadFunction,
 };
 use clap::Parser;
+use num::{complex::Complex64, Zero};
 use std::f64::consts::PI;
 
 #[derive(Parser)]
@@ -401,7 +402,7 @@ impl Problem3Freq {
     }
 }
 
-fn det_roots(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (f64, f64) {
+fn det_roots(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (Complex64, Complex64) {
     let a1 = -2.0 * alpha * alpha + omega * omega / c2 / c2 - 2.0 * alpha * alpha * mu_0
         + omega * omega / c1 / c1
         + mu_0 * omega * omega / c1 / c1;
@@ -411,8 +412,20 @@ fn det_roots(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (f64, f64) 
         - alpha * alpha * omega * omega / c2 / c2
         + omega * omega * omega * omega / c1 / c1 / c2 / c2;
 
-    let s1 = f64::sqrt((-a1 + f64::sqrt(a1 * a1 - 4.0 * (1.0 + mu_0) * a2)) / (2.0 * (1.0 + mu_0)));
-    let s2 = f64::sqrt((-a1 - f64::sqrt(a1 * a1 - 4.0 * (1.0 + mu_0) * a2)) / (2.0 * (1.0 + mu_0)));
+    let sqrt = f64::sqrt(a1 * a1 - 4.0 * (1.0 + mu_0) * a2);
+    let s1 = -a1 + sqrt;
+    let s2 = -a1 - sqrt;
+    let coef = 2.0 * (1.0 + mu_0);
+    let s1 = if s1 >= 0.0 {
+        Complex64::new(f64::sqrt(s1 / coef), 0.0)
+    } else {
+        Complex64::new(0.0, f64::sqrt(-s1 / coef))
+    };
+    let s2 = if s2 >= 0.0 {
+        Complex64::new(f64::sqrt(s2 / coef), 0.0)
+    } else {
+        Complex64::new(0.0, f64::sqrt(-s2 / coef))
+    };
 
     (s1, s2)
 }
@@ -420,8 +433,8 @@ fn det_roots(omega: f64, c1: f64, c2: f64, alpha: f64, mu_0: f64) -> (f64, f64) 
 fn c_coefficients<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
-    a1: f64,
-    a3: f64,
+    s1: Complex64,
+    s2: Complex64,
     omega: f64,
     c1: f64,
     c2: f64,
@@ -431,35 +444,35 @@ fn c_coefficients<F: Fn(f64) -> f64 + Send + Sync>(
     lambda: f64,
     load_function: &F,
     eps: f64,
-) -> (f64, f64, f64, f64) {
-    let pn = definite_integral(0_f64, a, 100, eps, &|x| {
+) -> (Complex64, Complex64, Complex64, Complex64) {
+    let pn = definite_integral(0.0, a, 100, eps, &|x| {
         load_function(x) * f64::cos(alpha * x)
     });
-    let coef = pn * (1_f64 + mu_0);
+    let coef = pn * (1.0 + mu_0);
 
-    let e1 = f64::exp(a1 * b) + f64::exp(-a1 * b);
-    let e2 = f64::exp(a1 * b) - f64::exp(-a1 * b);
-    let e3 = f64::exp(a3 * b) + f64::exp(-a3 * b);
-    let e4 = f64::exp(a3 * b) - f64::exp(-a3 * b);
+    let e1 = Complex64::exp(s1 * b) + Complex64::exp(-s1 * b);
+    let e2 = Complex64::exp(s1 * b) - Complex64::exp(-s1 * b);
+    let e3 = Complex64::exp(s2 * b) + Complex64::exp(-s2 * b);
+    let e4 = Complex64::exp(s2 * b) - Complex64::exp(-s2 * b);
 
-    let z1 = 2_f64 * a1 * (a1 * a1 - a3 * a3);
-    let z2 = 2_f64 * a3 * (a3 * a3 - a1 * a1);
+    let z1 = 2.0 * s1 * (s1 * s1 - s2 * s2);
+    let z2 = 2.0 * s2 * (s2 * s2 - s1 * s1);
 
-    let x1 = a1 * alpha * mu_0;
-    let x2 = a3 * alpha * mu_0;
-    let _x3 = a1 * a1 + a1 * a1 * mu_0 - alpha * alpha + omega * omega / c2 / c2;
-    let x4 = a3 * a3 + a3 * a3 * mu_0 - alpha * alpha + omega * omega / c2 / c2;
-    let x5 = a1 * a1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1;
-    let x6 = a3 * a3 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1;
+    let x1 = s1 * alpha * mu_0;
+    let x2 = s2 * alpha * mu_0;
+    let _x3 = s1 * s1 + s1 * s1 * mu_0 - alpha * alpha + omega * omega / c2 / c2;
+    let x4 = s2 * s2 + s2 * s2 * mu_0 - alpha * alpha + omega * omega / c2 / c2;
+    let x5 = s1 * s1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1;
+    let x6 = s2 * s2 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1;
 
-    let d2 = e2 * (a1 * x1 - alpha * x5) / z1;
-    let d4 = e4 * (a3 * x4 - alpha * x6) / z2;
-    let d6 = e1 * (a1 * x5 * (2_f64 * g + lambda) + alpha * lambda * x1) / z1;
-    let d8 = e3 * (a3 * x6 * (2_f64 * g + lambda) + alpha * lambda * x2) / z2;
+    let d2 = e2 * (s1 * x1 - alpha * x5) / z1;
+    let d4 = e4 * (s2 * x4 - alpha * x6) / z2;
+    let d6 = e1 * (s1 * x5 * (2.0 * g + lambda) + alpha * lambda * x1) / z1;
+    let d8 = e3 * (s2 * x6 * (2.0 * g + lambda) + alpha * lambda * x2) / z2;
 
-    let c1 = 0_f64;
+    let c1 = Complex64::zero();
     let c2 = coef * d4 / (d8 * d2 - d4 * d6);
-    let c3 = 0_f64;
+    let c3 = Complex64::zero();
     let c4 = -coef * d2 / (d8 * d2 - d4 * d6);
 
     (c1, c2, c3, c4)
@@ -478,13 +491,13 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     lambda: f64,
     load_function: &F,
     eps: f64,
-) -> f64 {
+) -> Complex64 {
     let (a1, a3) = det_roots(omega, c1, c2, alpha, mu_0);
 
-    let e1 = f64::exp(a1 * y);
-    let e2 = f64::exp(-a1 * y);
-    let e3 = f64::exp(a3 * y);
-    let e4 = f64::exp(-a3 * y);
+    let e1 = Complex64::exp(a1 * y);
+    let e2 = Complex64::exp(-a1 * y);
+    let e3 = Complex64::exp(a3 * y);
+    let e4 = Complex64::exp(-a3 * y);
 
     let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
@@ -505,11 +518,11 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     let res = c_1
         * (a1 * a1 + a1 * a1 * mu_0 - alpha * alpha + omega * omega / c2 / c2)
         * (e1 - e2)
-        / (2_f64 * a1 * (a1 * a1 - a3 * a3))
-        + c_2 * a1 * alpha * mu_0 * (e1 + e2) / (2_f64 * a1 * (a1 * a1 - a3 * a3))
+        / (2.0 * a1 * (a1 * a1 - a3 * a3))
+        + c_2 * a1 * alpha * mu_0 * (e1 + e2) / (2.0 * a1 * (a1 * a1 - a3 * a3))
         + c_3 * (a3 * a3 + a3 * a3 * mu_0 - alpha * alpha + omega * omega / c2 / c2) * (e3 - e4)
-            / (2_f64 * a3 * (a3 * a3 - a1 * a1))
-        + c_4 * a3 * alpha * mu_0 * (e3 + e4) / (2_f64 * a3 * (a3 * a3 - a1 * a1));
+            / (2.0 * a3 * (a3 * a3 - a1 * a1))
+        + c_4 * a3 * alpha * mu_0 * (e3 + e4) / (2.0 * a3 * (a3 * a3 - a1 * a1));
 
     res
 }
@@ -527,13 +540,13 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     lambda: f64,
     load_function: &F,
     eps: f64,
-) -> f64 {
+) -> Complex64 {
     let (s1, s2) = det_roots(omega, c1, c2, alpha, mu_0);
 
-    let e1 = f64::exp(s1 * y);
-    let e2 = f64::exp(-s1 * y);
-    let e3 = f64::exp(s2 * y);
-    let e4 = f64::exp(-s2 * y);
+    let e1 = Complex64::exp(s1 * y);
+    let e2 = Complex64::exp(-s1 * y);
+    let e3 = Complex64::exp(s2 * y);
+    let e4 = Complex64::exp(-s2 * y);
 
     let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
@@ -551,16 +564,16 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
         eps,
     );
 
-    let res = c_1 * (-s1 * alpha * mu_0) * (e1 + e2) / (2_f64 * s1 * (s1 * s1 - s2 * s2))
+    let res = c_1 * (-s1 * alpha * mu_0) * (e1 + e2) / (2.0 * s1 * (s1 * s1 - s2 * s2))
         + c_2
             * (s1 * s1 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
             * (e1 - e2)
-            / (2_f64 * s1 * (s1 * s1 - s2 * s2))
-        + c_3 * (-s2 * alpha * mu_0) * (e3 + e4) / (2_f64 * s2 * (s2 * s2 - s1 * s1))
+            / (2.0 * s1 * (s1 * s1 - s2 * s2))
+        + c_3 * (-s2 * alpha * mu_0) * (e3 + e4) / (2.0 * s2 * (s2 * s2 - s1 * s1))
         + c_4
             * (s2 * s2 - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
             * (e3 - e4)
-            / (2_f64 * s2 * (s2 * s2 - s1 * s1));
+            / (2.0 * s2 * (s2 * s2 - s1 * s1));
 
     res
 }
@@ -578,13 +591,13 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     lambda: f64,
     load_function: &F,
     eps: f64,
-) -> f64 {
+) -> Complex64 {
     let (s1, s2) = det_roots(omega, c1, c2, alpha, mu_0);
 
-    let e1 = f64::exp(s1 * y);
-    let e2 = f64::exp(-s1 * y);
-    let e3 = f64::exp(s2 * y);
-    let e4 = f64::exp(-s2 * y);
+    let e1 = Complex64::exp(s1 * y);
+    let e2 = Complex64::exp(-s1 * y);
+    let e3 = Complex64::exp(s2 * y);
+    let e4 = Complex64::exp(-s2 * y);
 
     let (c_1, c_2, c_3, c_4) = c_coefficients(
         a,
@@ -642,8 +655,8 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let f = |i| {
         if x != a && x != 0_f64 {
             let alpha = PI * i as f64 / a;
-            2_f64
-                * function_un(
+            let res =
+                2.0 * function_un(
                     y,
                     a,
                     b,
@@ -656,16 +669,15 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
                     lambda,
                     load_function,
                     eps,
-                )
-                * f64::sin(alpha * x)
-                * cos_t
-                / a
+                ) * f64::sin(alpha * x)
+                    / a;
+            res.re
         } else {
-            0_f64
+            0.0
         }
     };
 
-    sum_calc(&f, eps, start, n)
+    sum_calc(&f, eps, start, n) * cos_t
 }
 
 fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -692,7 +704,7 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     let f = |i| {
         if x != a && x != 0_f64 {
             let alpha = PI * i as f64 / a;
-            2_f64
+            let res = 2.0
                 * alpha
                 * function_un(
                     y,
@@ -709,14 +721,14 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
                     eps,
                 )
                 * f64::cos(alpha * x)
-                * cos_t
-                / a
+                / a;
+            res.re
         } else {
-            0_f64
+            0.0
         }
     };
 
-    sum_calc(&f, eps, start, n)
+    sum_calc(&f, eps, start, n) * cos_t
 }
 
 fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
@@ -748,8 +760,8 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
 
     let f = |i| {
         let alpha = PI * i as f64 / a;
-        2_f64
-            * function_vn(
+        let res =
+            2.0 * function_vn(
                 y,
                 a,
                 b,
@@ -762,13 +774,12 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
                 lambda,
                 load_function,
                 eps,
-            )
-            * f64::cos(alpha * x)
-            * cos_t
-            / a
+            ) * f64::cos(alpha * x)
+                / a;
+        res.re
     };
 
-    v0 + sum_calc(&f, eps, start, n)
+    v0 * cos_t + sum_calc(&f, eps, start, n) * cos_t
 }
 
 fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
@@ -800,8 +811,8 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
 
     let f = |i| {
         let alpha = PI * i as f64 / a;
-        2_f64
-            * function_derivative_vn(
+        let res =
+            2.0 * function_derivative_vn(
                 y,
                 a,
                 b,
@@ -814,13 +825,12 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
                 lambda,
                 load_function,
                 eps,
-            )
-            * f64::cos(alpha * x)
-            * cos_t
-            / a
+            ) * f64::cos(alpha * x)
+                / a;
+        res.re
     };
 
-    v0 + sum_calc(&f, eps, start, n)
+    v0 * cos_t + sum_calc(&f, eps, start, n) * cos_t
 }
 
 fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
@@ -927,7 +937,7 @@ mod tests {
 
     #[test]
     fn det_roots_test() {
-        let a = 10_f64;
+        let a: f64 = 10_f64;
         let omega = 0.75;
         let c1 = 10_f64;
         let c2 = 10_f64;
@@ -940,6 +950,7 @@ mod tests {
             let alpha = PI * i as f64 / a;
 
             let (s1, s2) = det_roots(omega, c1, c2, alpha, mu_0);
+            let (s1, s2) = (s1.re, s2.re);
 
             let func = |s: f64| {
                 (s * s - alpha * alpha - alpha * alpha * mu_0 + omega * omega / c1 / c1)
@@ -999,10 +1010,10 @@ mod tests {
                 load_function(x) * f64::cos(alpha * x)
             });
 
-            let e1 = f64::exp(a1 * b) + f64::exp(-a1 * b);
-            let e2 = f64::exp(a1 * b) - f64::exp(-a1 * b);
-            let e3 = f64::exp(a3 * b) + f64::exp(-a3 * b);
-            let e4 = f64::exp(a3 * b) - f64::exp(-a3 * b);
+            let e1 = Complex64::exp(a1 * b) + Complex64::exp(-a1 * b);
+            let e2 = Complex64::exp(a1 * b) - Complex64::exp(-a1 * b);
+            let e3 = Complex64::exp(a3 * b) + Complex64::exp(-a3 * b);
+            let e4 = Complex64::exp(a3 * b) - Complex64::exp(-a3 * b);
 
             let z1 = 2_f64 * a1 * (a1 * a1 - a3 * a3);
             let z2 = 2_f64 * a3 * (a3 * a3 - a1 * a1);
@@ -1045,25 +1056,25 @@ mod tests {
             let eq4 = c_1 * (-x1 / z1) + c_3 * (-x2 / z2);
 
             assert!(
-                f64::abs(eq1 - 0_f64) < eps,
+                f64::abs(eq1.re - 0_f64) < eps,
                 "result: {}, exp: {}",
                 eq1,
                 0_f64
             );
             assert!(
-                f64::abs(eq2 + pn * (1_f64 + mu_0)) < eps,
+                f64::abs(eq2.re + pn * (1_f64 + mu_0)) < eps,
                 "result: {}, exp: {}",
                 eq2,
                 -pn * (1_f64 + mu_0)
             );
             assert!(
-                f64::abs(eq3 - 0_f64) < eps,
+                f64::abs(eq3.re - 0_f64) < eps,
                 "result: {}, exp: {}",
                 eq3,
                 0_f64
             );
             assert!(
-                f64::abs(eq4 - 0_f64) < eps,
+                f64::abs(eq4.re - 0_f64) < eps,
                 "result: {}, exp: {}",
                 eq4,
                 0_f64
