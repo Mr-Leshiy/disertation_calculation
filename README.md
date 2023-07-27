@@ -100,7 +100,7 @@ function sigma y
 ## Problem 3 Frequations calc
 function u
 ```
-./target/release/calculation problem3_freq --load_function=type1 --a=10 --b=15 --x=5 --y=7.5 --t=10 --omega_1=0.1 --omega_2=10 --n_omega=1000 --puasson_coef=0.25 --young_modulus=200 --c1=10 --c2=10 --eps=0.1 --function_type=u
+./target/release/calculation problem3_freq --load_function=type1 --a=10 --b=15 --x=8 --y=10 --t=10 --omega_1=0.1 --omega_2=20 --n_omega=5000 --puasson_coef=0.25 --young_modulus=200 --c1=10 --c2=10 --eps=0.1 --function_type=u
 ```
 function v
 ```
