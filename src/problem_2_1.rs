@@ -1,0 +1,354 @@
+use crate::utils::{g, lambda, mu_0};
+use std::f64::consts::PI;
+
+fn a_functions(
+    alpha: f64,
+    mu_0: f64,
+) -> (
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+    impl Fn(f64) -> f64,
+) {
+    let coef = (1.0 + mu_0) * 4.0 * alpha;
+    let a_1 = move |y: f64| f64::exp(alpha * y) * (y * alpha * mu_0 + 2.0 + mu_0) / coef;
+    let a_2 = move |y: f64| f64::exp(alpha * y) * (y * alpha * mu_0) / coef;
+    let a_3 = move |y: f64| f64::exp(-alpha * y) * (y * alpha * mu_0 - 2.0 - mu_0) / coef;
+    let a_4 = move |y: f64| f64::exp(-alpha * y) * (-y * alpha * mu_0) / coef;
+    let a_5 = move |y: f64| f64::exp(alpha * y) * (-y * alpha * mu_0) / coef;
+    let a_6 = move |y: f64| f64::exp(alpha * y) * (-y * alpha * mu_0 + 2.0 + mu_0) / coef;
+    let a_7 = move |y: f64| f64::exp(-alpha * y) * (y * alpha * mu_0) / coef;
+    let a_8 = move |y: f64| f64::exp(-alpha * y) * (-y * alpha * mu_0 - 2.0 - mu_0) / coef;
+
+    let a_9 =
+        move |y: f64| f64::exp(alpha * y) * (y * alpha * mu_0 + 2.0 + 2.0 * mu_0) * alpha / coef;
+    let a_10 = move |y: f64| f64::exp(alpha * y) * (y * alpha * mu_0 + mu_0) * alpha / coef;
+    let a_11 =
+        move |y: f64| f64::exp(-alpha * y) * (-y * alpha * mu_0 + 2.0 + 2.0 * mu_0) * alpha / coef;
+    let a_12 = move |y: f64| f64::exp(-alpha * y) * (y * alpha * mu_0 - mu_0) * alpha / coef;
+    let a_13 = move |y: f64| f64::exp(alpha * y) * (-y * alpha * mu_0 - mu_0) * alpha / coef;
+    let a_14 = move |y: f64| f64::exp(alpha * y) * (-y * alpha * mu_0 + 2.0) * alpha / coef;
+    let a_15 = move |y: f64| f64::exp(-alpha * y) * (-y * alpha * mu_0 + mu_0) * alpha / coef;
+    let a_16 = move |y: f64| f64::exp(-alpha * y) * (y * alpha * mu_0 + 2.0) * alpha / coef;
+
+    (
+        a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, a_9, a_10, a_11, a_12, a_13, a_14, a_15, a_16,
+    )
+}
+
+fn b_values(
+    b: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+) -> (
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+) {
+    let (a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, a_9, a_10, a_11, a_12, a_13, a_14, a_15, a_16) =
+        a_functions(alpha, mu_0);
+
+    let b_1 = a_9(b) - alpha * a_5(b);
+    let b_2 = a_10(b) - alpha * a_6(b);
+    let b_3 = a_11(b) - alpha * a_7(b);
+    let b_4 = a_12(b) - alpha * a_8(b);
+    let b_5 = (2.0 * g + lambda) * a_13(b) + alpha * lambda * a_1(b);
+    let b_6 = (2.0 * g + lambda) * a_14(b) + alpha * lambda * a_2(b);
+    let b_7 = (2.0 * g + lambda) * a_15(b) + alpha * lambda * a_3(b);
+    let b_8 = (2.0 * g + lambda) * a_16(b) + alpha * lambda * a_4(b);
+    let b_9 = a_9(0.0) - alpha * a_5(0.0);
+    let b_10 = a_10(0.0) - alpha * a_6(0.0);
+    let b_11 = a_11(0.0) - alpha * a_7(0.0);
+    let b_12 = a_12(0.0) - alpha * a_8(0.0);
+    let b_13 = a_5(0.0);
+    let b_14 = a_6(0.0);
+    let b_15 = a_7(0.0);
+    let b_16 = a_8(0.0);
+
+    (
+        b_1, b_2, b_3, b_4, b_5, b_6, b_7, b_8, b_9, b_10, b_11, b_12, b_13, b_14, b_15, b_16,
+    )
+}
+
+fn coefficients(
+    b: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+) -> (
+    ((f64, f64, f64, f64), (f64, f64, f64, f64)),
+    ((f64, f64, f64, f64), (f64, f64, f64, f64)),
+) {
+    let (b_1, b_2, b_3, b_4, b_5, b_6, b_7, b_8, b_9, b_10, b_11, b_12, _b_13, b_14, _b_15, b_16) =
+        b_values(b, alpha, mu_0, g, lambda);
+
+    let dem = (b_8 * b_14 - b_6 * b_16) * (b_3 * b_9 - b_1 * b_11)
+        + (b_10 * b_16 - b_12 * b_14) * (b_3 * b_5 - b_1 * b_7)
+        + (b_2 * b_16 - b_4 * b_14) * (b_7 * b_9 - b_5 * b_11);
+
+    let d_1_0 = (b_16 * (b_6 * b_11 - b_7 * b_10) + b_14 * (b_7 * b_12 - b_8 * b_11)) / dem;
+    let d_2_0 = (b_16 * (b_3 * b_10 - b_2 * b_11) + b_14 * (b_4 * b_11 - b_3 * b_12)) / dem;
+    let d_3_0 = b_16 * (b_7 * b_9 - b_5 * b_11) / dem;
+    let d_4_0 = b_16 * (b_1 * b_11 - b_3 * b_9) / dem;
+
+    let f_1_0 = (b_16 * (b_5 * b_10 - b_6 * b_9) + b_14 * (b_8 * b_9 - b_5 * b_12)) / dem;
+    let f_2_0 = (b_16 * (b_2 * b_9 - b_1 * b_10) + b_14 * (b_1 * b_12 - b_4 * b_9)) / dem;
+    let f_3_0 = b_14 * (b_11 * b_5 - b_7 * b_9) / dem;
+    let f_4_0 = b_14 * (b_3 * b_9 - b_1 * b_11) / dem;
+
+    let d_1_1 = (b_14 * b_3 * b_8 - b_14 * b_4 * b_7 + b_16 * b_2 * b_7 - b_16 * b_3 * b_6) / dem;
+    let d_2_1 = (-b_10 * b_3 * b_8 + b_10 * b_4 * b_7 + b_11 * b_2 * b_8
+        - b_11 * b_4 * b_6
+        - b_12 * b_2 * b_7
+        + b_12 * b_3 * b_6)
+        / dem;
+    let d_3_1 = (-b_1 * b_16 * b_7 + b_16 * b_3 * b_5) / dem;
+    let d_4_1 = (-b_1 * b_11 * b_8 + b_1 * b_12 * b_7 + b_11 * b_4 * b_5 - b_12 * b_3 * b_5
+        + b_3 * b_8 * b_9
+        - b_4 * b_7 * b_9)
+        / dem;
+
+    let f_1_1 = (-b_1 * b_14 * b_8 + b_1 * b_16 * b_6 + b_14 * b_4 * b_5 - b_16 * b_2 * b_5) / dem;
+    let f_2_1 = (b_1 * b_10 * b_8 - b_1 * b_12 * b_6 - b_10 * b_4 * b_5 + b_12 * b_2 * b_5
+        - b_2 * b_8 * b_9
+        + b_4 * b_6 * b_9)
+        / dem;
+    let f_3_1 = (b_1 * b_14 * b_7 - b_14 * b_3 * b_5) / dem;
+    let f_4_1 = (-b_1 * b_10 * b_7 + b_1 * b_11 * b_6 + b_10 * b_3 * b_5 - b_11 * b_2 * b_5
+        + b_2 * b_7 * b_9
+        - b_3 * b_6 * b_9)
+        / dem;
+
+    (
+        ((d_1_0, d_2_0, d_3_0, d_4_0), (f_1_0, f_2_0, f_3_0, f_4_0)),
+        ((d_1_1, d_2_1, d_3_1, d_4_1), (f_1_1, f_2_1, f_3_1, f_4_1)),
+    )
+}
+
+fn psi(
+    y: f64,
+    b: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+) -> (
+    ((f64, f64, f64, f64), (f64, f64, f64, f64)),
+    ((f64, f64, f64, f64), (f64, f64, f64, f64)),
+) {
+    let (a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, a_9, a_10, a_11, a_12, a_13, a_14, a_15, a_16) =
+        a_functions(alpha, mu_0);
+    let (
+        ((d_1_0, d_2_0, d_3_0, d_4_0), (f_1_0, f_2_0, f_3_0, f_4_0)),
+        ((d_1_1, d_2_1, d_3_1, d_4_1), (f_1_1, f_2_1, f_3_1, f_4_1)),
+    ) = coefficients(b, alpha, mu_0, g, lambda);
+
+    let psi_1_0 = a_1(y) * d_1_0 + a_2(y) * d_3_0 + a_3(y) * f_1_0 + a_4(y) * f_3_0;
+    let psi_2_0 = a_1(y) * d_2_0 + a_2(y) * d_4_0 + a_3(y) * f_2_0 + a_4(y) * f_4_0;
+    let psi_3_0 = a_5(y) * d_1_0 + a_6(y) * d_3_0 + a_7(y) * f_1_0 + a_8(y) * f_3_0;
+    let psi_4_0 = a_5(y) * d_2_0 + a_6(y) * d_4_0 + a_7(y) * f_2_0 + a_8(y) * f_4_0;
+
+    let psi_1_1 = a_1(y) * d_1_1 + a_2(y) * d_3_1 + a_3(y) * f_1_1 + a_4(y) * f_3_1;
+    let psi_2_1 = a_1(y) * d_2_1 + a_2(y) * d_4_1 + a_3(y) * f_2_1 + a_4(y) * f_4_1;
+    let psi_3_1 = a_5(y) * d_1_1 + a_6(y) * d_3_1 + a_7(y) * f_1_1 + a_8(y) * f_3_1;
+    let psi_4_1 = a_5(y) * d_2_1 + a_6(y) * d_4_1 + a_7(y) * f_2_1 + a_8(y) * f_4_1;
+
+    let der_psi_1_0 = a_9(y) * d_1_0 + a_10(y) * d_3_0 + a_11(y) * f_1_0 + a_12(y) * f_3_0;
+    let der_psi_2_0 = a_9(y) * d_2_0 + a_10(y) * d_4_0 + a_11(y) * f_2_0 + a_12(y) * f_4_0;
+    let der_psi_3_0 = a_13(y) * d_1_0 + a_14(y) * d_3_0 + a_15(y) * f_1_0 + a_16(y) * f_3_0;
+    let der_psi_4_0 = a_13(y) * d_2_0 + a_14(y) * d_4_0 + a_15(y) * f_2_0 + a_16(y) * f_4_0;
+
+    let der_psi_1_1 = a_9(y) * d_1_1 + a_10(y) * d_3_1 + a_11(y) * f_1_1 + a_12(y) * f_3_1;
+    let der_psi_2_1 = a_9(y) * d_2_1 + a_10(y) * d_4_1 + a_11(y) * f_2_1 + a_12(y) * f_4_1;
+    let der_psi_3_1 = a_13(y) * d_1_1 + a_14(y) * d_3_1 + a_15(y) * f_1_1 + a_16(y) * f_3_1;
+    let der_psi_4_1 = a_13(y) * d_2_1 + a_14(y) * d_4_1 + a_15(y) * f_2_1 + a_16(y) * f_4_1;
+
+    (
+        (
+            (psi_1_0, psi_2_0, psi_3_0, psi_4_0),
+            (psi_1_1, psi_2_1, psi_3_1, psi_4_1),
+        ),
+        (
+            (der_psi_1_0, der_psi_2_0, der_psi_3_0, der_psi_4_0),
+            (der_psi_1_1, der_psi_2_1, der_psi_3_1, der_psi_4_1),
+        ),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use nalgebra::{Matrix2, RowVector2};
+
+    #[test]
+    fn coefficients_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let alpha = PI / a * 2.0;
+
+        let (b_1, b_2, b_3, b_4, b_5, b_6, b_7, b_8, b_9, b_10, b_11, b_12, b_13, b_14, b_15, b_16) =
+            b_values(b, alpha, mu_0, g, lambda);
+
+        let eq_1 =
+            |x_1: f64, x_2: f64, x_3: f64, x_4: f64| b_1 * x_1 + b_2 * x_2 + b_3 * x_3 + b_4 * x_4;
+        let eq_2 =
+            |x_1: f64, x_2: f64, x_3: f64, x_4: f64| b_5 * x_1 + b_6 * x_2 + b_7 * x_3 + b_8 * x_4;
+        let eq_3 = |x_1: f64, x_2: f64, x_3: f64, x_4: f64| {
+            b_9 * x_1 + b_10 * x_2 + b_11 * x_3 + b_12 * x_4
+        };
+        let eq_4 = |x_1: f64, x_2: f64, x_3: f64, x_4: f64| {
+            b_13 * x_1 + b_14 * x_2 + b_15 * x_3 + b_16 * x_4
+        };
+
+        let (
+            ((d_1_0, d_2_0, d_3_0, d_4_0), (f_1_0, f_2_0, f_3_0, f_4_0)),
+            ((d_1_1, d_2_1, d_3_1, d_4_1), (f_1_1, f_2_1, f_3_1, f_4_1)),
+        ) = coefficients(b, alpha, mu_0, g, lambda);
+
+        println!("system 1");
+        println!("{}", eq_1(d_1_0, d_3_0, f_1_0, f_3_0));
+        println!("{}", eq_2(d_1_0, d_3_0, f_1_0, f_3_0));
+        println!("{}", eq_3(d_1_0, d_3_0, f_1_0, f_3_0));
+        println!("{}", eq_4(d_1_0, d_3_0, f_1_0, f_3_0));
+
+        println!("system 2");
+        println!("{}", eq_1(d_2_0, d_4_0, f_2_0, f_4_0));
+        println!("{}", eq_2(d_2_0, d_4_0, f_2_0, f_4_0));
+        println!("{}", eq_3(d_2_0, d_4_0, f_2_0, f_4_0));
+        println!("{}", eq_4(d_2_0, d_4_0, f_2_0, f_4_0));
+
+        println!("system 3");
+        println!("{}", eq_1(d_1_1, d_3_1, f_1_1, f_3_1));
+        println!("{}", eq_2(d_1_1, d_3_1, f_1_1, f_3_1));
+        println!("{}", eq_3(d_1_1, d_3_1, f_1_1, f_3_1));
+        println!("{}", eq_4(d_1_1, d_3_1, f_1_1, f_3_1));
+
+        println!("system 4");
+        println!("{}", eq_1(d_2_1, d_4_1, f_2_1, f_4_1));
+        println!("{}", eq_2(d_2_1, d_4_1, f_2_1, f_4_1));
+        println!("{}", eq_3(d_2_1, d_4_1, f_2_1, f_4_1));
+        println!("{}", eq_4(d_2_1, d_4_1, f_2_1, f_4_1));
+    }
+
+    #[test]
+    fn psi_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let alpha = PI / a * 2.0;
+
+        let (
+            (
+                (b_psi_1_0, b_psi_2_0, b_psi_3_0, b_psi_4_0),
+                (b_psi_1_1, b_psi_2_1, b_psi_3_1, b_psi_4_1),
+            ),
+            (
+                (b_der_psi_1_0, b_der_psi_2_0, b_der_psi_3_0, b_der_psi_4_0),
+                (b_der_psi_1_1, b_der_psi_2_1, b_der_psi_3_1, b_der_psi_4_1),
+            ),
+        ) = psi(b, b, alpha, mu_0, g, lambda);
+        let (
+            (
+                (zero_psi_1_0, zero_psi_2_0, zero_psi_3_0, zero_psi_4_0),
+                (zero_psi_1_1, zero_psi_2_1, zero_psi_3_1, zero_psi_4_1),
+            ),
+            (
+                (zero_der_psi_1_0, zero_der_psi_2_0, zero_der_psi_3_0, zero_der_psi_4_0),
+                (zero_der_psi_1_1, zero_der_psi_2_1, zero_der_psi_3_1, zero_der_psi_4_1),
+            ),
+        ) = psi(0.0, b, alpha, mu_0, g, lambda);
+
+        let a_1 = Matrix2::from_rows(&[
+            RowVector2::new(1.0, 0.0),
+            RowVector2::new(0.0, 2.0 * g + lambda),
+        ]);
+        let a_2 = Matrix2::from_rows(&[
+            RowVector2::new(0.0, -alpha),
+            RowVector2::new(alpha * lambda, 0.0),
+        ]);
+
+        let b_der_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(b_der_psi_1_0, b_der_psi_2_0),
+            RowVector2::new(b_der_psi_3_0, b_der_psi_4_0),
+        ]);
+        let b_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(b_psi_1_0, b_psi_2_0),
+            RowVector2::new(b_psi_3_0, b_psi_4_0),
+        ]);
+        let res = a_1 * b_der_psi_0 + a_2 * b_psi_0;
+        println!("U_0[Psi_0]: {}", res);
+
+        let b_der_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(b_der_psi_1_1, b_der_psi_2_1),
+            RowVector2::new(b_der_psi_3_1, b_der_psi_4_1),
+        ]);
+        let b_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(b_psi_1_1, b_psi_2_1),
+            RowVector2::new(b_psi_3_1, b_psi_4_1),
+        ]);
+        let res = a_1 * b_der_psi_0 + a_2 * b_psi_0;
+        println!("U_0[Psi_1]: {}", res);
+
+        let a_1 = Matrix2::from_rows(&[RowVector2::new(1.0, 0.0), RowVector2::new(0.0, 0.0)]);
+        let a_2 = Matrix2::from_rows(&[RowVector2::new(0.0, -alpha), RowVector2::new(0.0, 1.0)]);
+
+        let zero_der_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(zero_der_psi_1_0, zero_der_psi_2_0),
+            RowVector2::new(zero_der_psi_3_0, zero_der_psi_4_0),
+        ]);
+        let zero_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(zero_psi_1_0, zero_psi_2_0),
+            RowVector2::new(zero_psi_3_0, zero_psi_4_0),
+        ]);
+        let res = a_1 * zero_der_psi_0 + a_2 * zero_psi_0;
+        println!("U_1[Psi_0]: {}", res);
+
+        let zero_der_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(zero_der_psi_1_1, zero_der_psi_2_1),
+            RowVector2::new(zero_der_psi_3_1, zero_der_psi_4_1),
+        ]);
+        let zero_psi_0 = Matrix2::from_rows(&[
+            RowVector2::new(zero_psi_1_1, zero_psi_2_1),
+            RowVector2::new(zero_psi_3_1, zero_psi_4_1),
+        ]);
+        let res = a_1 * zero_der_psi_0 + a_2 * zero_psi_0;
+        println!("U_1[Psi_1]: {}", res);
+    }
+}

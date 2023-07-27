@@ -13,6 +13,7 @@ mod polynomials;
 mod problem_1;
 mod problem_1_2;
 mod problem_2;
+mod problem_2_1;
 mod problem_3;
 mod utils;
 
