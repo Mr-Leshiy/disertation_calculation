@@ -261,4 +261,9 @@ mod tests {
         let res = system_solve(a, left, eps);
         assert_eq!(res, expected);
     }
+
+    #[test]
+    fn lib_test() {
+        
+    }
 }
