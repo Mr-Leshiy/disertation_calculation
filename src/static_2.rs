@@ -3,7 +3,7 @@ use crate::{
         definite_integral, definite_integral_limit, sqrt_gauss_integral, sqrt_gauss_integral_finit,
     },
     polynomials::chebyshev,
-    utils::{g, lambda, mu_0, sum_calc_finit},
+    utils::sum_calc_finit,
 };
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::f64::consts::PI;
@@ -481,6 +481,7 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::{g, lambda, mu_0};
     use nalgebra::{Matrix2, RowVector2};
 
     #[test]

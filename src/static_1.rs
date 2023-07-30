@@ -1,108 +1,5 @@
-use crate::{
-    integration::definite_integral,
-    utils::{function_calculation, g, lambda, mu_0, save_static, sum_calc, surface_static_plot},
-    FunctionType, LoadFunction,
-};
-use clap::Parser;
+use crate::{integration::definite_integral, utils::sum_calc};
 use std::f64::consts::PI;
-
-#[derive(Parser)]
-#[clap(rename_all = "snake-case")]
-pub struct Problem1 {
-    #[clap(long)]
-    a: f64,
-    #[clap(long)]
-    b: f64,
-    #[clap(long)]
-    n_x: u32,
-    #[clap(long)]
-    n_y: u32,
-    #[clap(long)]
-    puasson_coef: f64,
-    #[clap(long)]
-    young_modulus: f64,
-    #[clap(long)]
-    eps: f64,
-    #[clap(long)]
-    function_type: FunctionType,
-    #[clap(long)]
-    load_function: LoadFunction,
-}
-
-impl Problem1 {
-    pub fn exec(self) {
-        let mu_0 = mu_0(self.puasson_coef);
-        let g = g(self.puasson_coef, self.young_modulus);
-        let lambda = lambda(self.puasson_coef, self.young_modulus);
-
-        let (x, y, z) = match self.function_type {
-            FunctionType::U => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
-                    function_u(
-                        self.a,
-                        self.b,
-                        x,
-                        y,
-                        mu_0,
-                        g,
-                        lambda,
-                        &|x| self.load_function.call(x),
-                        self.eps,
-                    )
-                })
-            }
-            FunctionType::V => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
-                    function_v(
-                        self.a,
-                        self.b,
-                        x,
-                        y,
-                        mu_0,
-                        g,
-                        lambda,
-                        &|x| self.load_function.call(x),
-                        self.eps,
-                    )
-                })
-            }
-            FunctionType::SigmaX => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
-                    function_sigma_x(
-                        self.a,
-                        self.b,
-                        x,
-                        y,
-                        mu_0,
-                        g,
-                        lambda,
-                        &|x| self.load_function.call(x),
-                        self.eps,
-                    )
-                })
-            }
-            FunctionType::SigmaY => {
-                function_calculation(self.a, self.b, self.n_x, self.n_y, None, |x, y, _| {
-                    function_sigma_y(
-                        self.a,
-                        self.b,
-                        x,
-                        y,
-                        mu_0,
-                        g,
-                        lambda,
-                        &|x| self.load_function.call(x),
-                        self.eps,
-                    )
-                })
-            }
-        };
-
-        let file_name = format!("problem_1, a: {0}, b: {1}, n_x: {2}, n_y: {3}, puasson_coef: {4}, young_modulus: {5}, eps: {6}, function_type: {7}, load_function: {8}", self.a, self.b, self.n_x, self.n_y, self.puasson_coef, self.young_modulus, self.eps, self.function_type, self.load_function);
-        let path = save_static(&x, &y, &z[0], &file_name);
-        surface_static_plot(&path);
-    }
-}
 
 // returns c1, c2, c3, c4 coefficients
 fn coefficients<F: Fn(f64) -> f64 + Send + Sync>(
@@ -364,9 +261,43 @@ fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
 }
 
+
+#[cfg(test)]
+mod run {
+    use super::*;
+    use crate::utils::{function_calculation, function_plot, g, lambda, mu_0, save_function};
+
+    #[test]
+    fn function_u_run() {
+        let a = 10.0;
+        let b = 15.0;
+        // steel
+        let puasson_coef = 0.25;
+        let young_modulus = 200.0;
+
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let y = 1.0;
+
+        let (x, y) = function_calculation(0.0, a, 100, |x| {
+            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+        });
+
+        let file_name = "problem1 function_u.txt";
+        let file = save_function(&x, &y, "x", "y", file_name);
+        function_plot(&file)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::{g, lambda, mu_0};
 
     #[test]
     fn coefficients_test() {

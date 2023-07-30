@@ -43,7 +43,7 @@ pub fn sum_calc_finit<F: Fn(usize) -> f64 + Send + Sync>(f: &F, start: usize, n:
     (start..n).into_par_iter().map(|i| f(i)).sum::<f64>()
 }
 
-pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
+pub fn function_calculation2<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     n_x: u32,
@@ -95,41 +95,45 @@ pub fn function_calculation<F: Fn(f64, f64, f64) -> f64 + Send + Sync>(
     (x, y, z)
 }
 
-pub fn function_calculation2<F: Fn(f64) -> f64 + Send + Sync>(
-    omega_1: f64,
-    omega_2: f64,
-    n_omega: u32,
+pub fn function_calculation<F: Fn(f64) -> f64 + Send + Sync>(
+    a_1: f64,
+    a_2: f64,
+    n_x: u32,
     f: F,
 ) -> (Vec<f64>, Vec<f64>) {
-    let h_omega = (omega_2 - omega_1) / n_omega as f64;
+    let h_omega = (a_2 - a_1) / n_x as f64;
 
     println!("Calculating ...\n");
-    let omega: Vec<_> = (0..n_omega + 1)
+    let x: Vec<_> = (0..n_x + 1)
         .into_par_iter()
-        .map(|i| i as f64 * h_omega + omega_1)
+        .map(|i| i as f64 * h_omega + a_1)
         .collect();
 
-    let z = omega
+    let y: Vec<f64> = x
         .clone()
         .into_iter()
-        .map(|omega| {
-            println!("{omega} - start");
-            let res = f(omega);
-            println!("{omega} - done");
+        .map(|x| {
+            let res = f(x);
             res
         })
         .collect();
     println!("Finished calculation");
-    (omega, z)
+    (x, y)
 }
 
-pub fn save_freq(omega: &[f64], z: &[f64], file_name: &str) -> PathBuf {
+pub fn save_function(
+    x: &[f64],
+    y: &[f64],
+    ox_name: &str,
+    oy_name: &str,
+    file_name: &str,
+) -> PathBuf {
     let path = current_dir().unwrap().join(file_name);
     let mut file = File::create(&path).unwrap();
     file.write_fmt(format_args!(
-        "{}|{}",
-        serde_json::to_string(&omega).unwrap(),
-        serde_json::to_string(&z).unwrap()
+        "{ox_name}|{oy_name}|{}|{}",
+        serde_json::to_string(&x).unwrap(),
+        serde_json::to_string(&y).unwrap()
     ))
     .unwrap();
     path
@@ -218,9 +222,11 @@ mod tests {
 
     #[test]
     fn function_plot_test() {
-        let path = save_freq(
+        let path = save_function(
             &vec![1_f64, 2_f64, 3_f64],
             &vec![1_f64, 2_f64, 3_f64],
+            "x",
+            "y",
             "tmp",
         );
         function_plot(&path);
