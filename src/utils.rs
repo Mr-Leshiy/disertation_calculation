@@ -1,5 +1,7 @@
-use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
-use std::{env::current_dir, fs::File, io::Write, path::PathBuf, process::Command};
+use rayon::prelude::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
+use std::{env::current_dir, fs::File, io::Write, path::PathBuf, process::Command, sync::Mutex};
 
 // calculate Lamme's coefficient G value
 pub fn g(puasson_coef: f64, young_modulus: f64) -> f64 {
@@ -103,21 +105,28 @@ pub fn function_calculation<F: Fn(f64) -> f64 + Send + Sync>(
 ) -> (Vec<f64>, Vec<f64>) {
     let h_omega = (a_2 - a_1) / n_x as f64;
 
-    println!("Calculating ...\n");
+    println!("Calculating ...");
     let x: Vec<_> = (0..n_x + 1)
         .into_par_iter()
         .map(|i| i as f64 * h_omega + a_1)
         .collect();
 
+    let counter = Mutex::new(0);
+
     let y: Vec<f64> = x
-        .clone()
-        .into_iter()
+        .par_iter()
         .map(|x| {
-            let res = f(x);
+            let res = f(*x);
+            *counter.lock().unwrap() += 1;
+            print!(
+                "\rProgress: {:.1$}%",
+                *counter.lock().unwrap() as f64 / (n_x + 1) as f64 * 100.0,
+                2
+            );
             res
         })
         .collect();
-    println!("Finished calculation");
+    println!("\nFinished calculation");
     (x, y)
 }
 

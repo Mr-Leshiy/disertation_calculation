@@ -171,6 +171,7 @@ pub fn system_solve(a: Matrix, left: Matrix, eps: f64) -> Matrix {
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::PI;
     use super::*;
 
     #[test]
@@ -280,5 +281,49 @@ mod tests {
         let res = a.qr().solve(&b);
 
         println!("{:?}", res);
+    }
+
+    #[test]
+    fn reduction_test() {
+        type Matrix<const N: usize, const M: usize> = nalgebra::Matrix<
+            f64,
+            nalgebra::Const<N>,
+            nalgebra::Const<M>,
+            nalgebra::ArrayStorage<f64, N, M>,
+        >;
+        const N: usize = 120;
+
+        let left = (0..N)
+            .into_par_iter()
+            .map(|m| {
+                let fm = 1.0 / (m as f64 + 1.0);
+                fm
+            })
+            .collect();
+        let left = Matrix::<N, 1>::from_vec(left);
+
+        let right = (0..N)
+            .into_par_iter()
+            .map(|m| {
+                (0..N)
+                    .into_par_iter()
+                    .map(|k| {
+                        let gkm = 1.0 / (m as f64 + 1.0) * 1.0 / (k as f64 + 1.0);
+                        if m == k {
+                            let v_m = if m >= 1 { 1.0 / m as f64 } else { f64::ln(2.0) };
+                            gkm + v_m * PI / 2.0
+                        } else {
+                            gkm
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect();
+        let right = Matrix::<N, N>::from_vec(right);
+
+        let res = right.qr().solve(&left).unwrap();
+
+        println!("{}", res.to_string());
     }
 }

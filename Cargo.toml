@@ -10,3 +10,6 @@ nalgebra = "0.32.3"
 rayon = { version = "1.7" }
 serde_json = { version = "1.0.96" }
 num = { version = "0.4.1" }
+
+[profile.test]
+opt-level = 3

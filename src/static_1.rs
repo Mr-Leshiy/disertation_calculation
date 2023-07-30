@@ -100,7 +100,7 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let coef = 1_f64 / alpha / 4_f64;
+    let coef = 1.0 / alpha / 4.0;
     let e1 = f64::exp(alpha * y);
     let e2 = f64::exp(-alpha * y);
 
@@ -217,8 +217,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     let n = 10;
     let f = |i| {
         let alpha = PI * i as f64 / a;
-        2_f64
-            * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+        2.0 * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
             * f64::cos(alpha * x)
             / a
             / (1_f64 + mu_0)
@@ -261,7 +260,6 @@ fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
 }
 
-
 #[cfg(test)]
 mod run {
     use super::*;
@@ -269,7 +267,6 @@ mod run {
 
     #[test]
     fn function_u_run() {
-        let a = 10.0;
         let b = 15.0;
         // steel
         let puasson_coef = 0.25;
@@ -279,17 +276,18 @@ mod run {
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
 
-        let load_function = |x| x * x;
+        let load_function = |x| x * x - 7.5;
         let eps = 0.1;
 
-        let y = 1.0;
+        let y = b;
+        let a = b;
 
         let (x, y) = function_calculation(0.0, a, 100, |x| {
-            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+            function_sigma_y(a, b, x, y, mu_0, g, lambda, &load_function, eps)
         });
 
-        let file_name = "problem1 function_u.txt";
-        let file = save_function(&x, &y, "x", "y", file_name);
+        let file_name = "static_1 function_u.txt";
+        let file = save_function(&x, &y, "x", "u(x,y)", file_name);
         function_plot(&file)
     }
 }

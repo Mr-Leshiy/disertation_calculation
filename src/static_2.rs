@@ -320,7 +320,7 @@ fn a_2(y: f64, xi: f64, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64) -> f64 {
         })
         .sum::<f64>();
 
-    let sum3 = a / 2.0 / PI * f64::ln(f64::cosh(PI / 2.0 / a * (2.0 * b - y - xi) + 1.0));
+    let sum3 = a / 2.0 / PI * f64::ln(f64::cosh(PI / 2.0 / a * (2.0 * b - y - xi)) + 1.0);
 
     2.0 * (sum1 + coef2 * sum2 + sum3) / (1.0 + mu_0) / a
 }
@@ -357,7 +357,7 @@ fn g_k_m(k: usize, m: usize, a: f64, b: f64, mu_0: f64, g: f64, lambda: f64, eps
     res
 }
 
-const N: usize = 3;
+const N: usize = 5;
 fn phi<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
@@ -409,8 +409,6 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    const N: usize = 10;
-
     let phi = phi(a, b, mu_0, g, lambda, &load_function, eps);
 
     // let sqrt = f64::sqrt(1.0 - xi * xi);
@@ -476,6 +474,38 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     };
 
     sum_calc_finit(&f, start, n)
+}
+
+#[cfg(test)]
+mod run {
+    use super::*;
+    use crate::utils::{function_calculation, function_plot, g, lambda, mu_0, save_function};
+
+    #[test]
+    fn function_u_run() {
+        let a = 10.0;
+        let b = 15.0;
+        // steel
+        let puasson_coef = 0.25;
+        let young_modulus = 200.0;
+
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let y = 1.0;
+
+        let (x, y) = function_calculation(0.0, a, 100, |x| {
+            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+        });
+
+        let file_name = "problem1 function_u.txt";
+        let file = save_function(&x, &y, "x", "u(x,y)", file_name);
+        function_plot(&file)
+    }
 }
 
 #[cfg(test)]
@@ -701,9 +731,9 @@ mod tests {
         let load_function = |x| x * x;
         let eps = 0.1;
 
-        for m in 0..10 {
+        for m in 0..1000 {
             let f_m = f_m(m, a, b, mu_0, g, lambda, &load_function, eps);
-            println!("{f_m}");
+            println!("m:{m}, {f_m}");
         }
     }
 
@@ -740,5 +770,23 @@ mod tests {
 
         let phi = phi(a, b, mu_0, g, lambda, &load_function, eps);
         println!("phi: {}", phi);
+    }
+
+    #[test]
+    fn unknown_function_test() {
+        let a = 10_f64;
+        let b = 15_f64;
+        let puasson_coef = 0.25;
+        let young_modulus = 200_f64;
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let xi = 1.0;
+
+        let unknown_function = unknown_function(xi, a, b, mu_0, g, lambda, &load_function, eps);
+        println!("unknown_function: {}", unknown_function);
     }
 }
