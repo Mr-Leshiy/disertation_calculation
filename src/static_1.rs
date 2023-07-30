@@ -19,17 +19,28 @@ fn coefficients<F: Fn(f64) -> f64 + Send + Sync>(
     let e1 = f64::exp(alpha * b);
     let e2 = f64::exp(-alpha * b);
 
-    let a1 = e1 * (2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha * mu_0 + 2_f64 * alpha)
-        - e2 * (-2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0);
-    let a2 = e1 * (2_f64 * b * alpha * alpha * mu_0 - 2_f64 * alpha)
-        + e2 * (2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha);
+    let y = b;
+
+    let a1 = e1
+        * (alpha * alpha * mu_0 * y + 2.0 * alpha + mu_0 * alpha - alpha * (-alpha * mu_0 * y))
+        - e2 * (-alpha * alpha * mu_0 * y + 2.0 * alpha + mu_0 * alpha
+            - alpha * (alpha * mu_0 * y));
+
+    let a2 = e1
+        * (alpha * alpha * mu_0 * y + alpha * mu_0 - alpha * (-alpha * mu_0 * y + 2.0 + mu_0))
+        + e2 * (alpha * alpha * mu_0 * y - alpha * mu_0 - alpha * (-alpha * mu_0 * y - 2.0 - mu_0));
+
     let a3 = e1
-        * (-2_f64 * g * b * alpha * alpha * mu_0 - 2_f64 * g * alpha * mu_0
-            + 2_f64 * lambda * alpha)
-        - e2 * (-2_f64 * g * b * alpha * alpha * mu_0 + 2_f64 * g * alpha * mu_0
-            - 2_f64 * lambda * alpha);
-    let a4 = e1 * (-2_f64 * g * b * alpha * alpha * mu_0 + (2_f64 * g + lambda) * 2_f64 * alpha)
-        + e2 * (2_f64 * g * b * alpha * alpha * mu_0 + (2_f64 * g + lambda) * 2_f64 * alpha);
+        * ((2.0 * g + lambda) * (-alpha * alpha * mu_0 * y - alpha * mu_0)
+            + alpha * lambda * (alpha * mu_0 * y + 2.0 + mu_0))
+        - e2 * ((2.0 * g + lambda) * (-alpha * alpha * mu_0 * y + alpha * mu_0)
+            + alpha * lambda * (alpha * mu_0 * y - 2.0 - mu_0));
+
+    let a4 = e1
+        * ((2.0 * g + lambda) * (-alpha * alpha * mu_0 * y + 2.0 * alpha)
+            + alpha * lambda * (alpha * mu_0 * y))
+        + e2 * ((2.0 * g + lambda) * (alpha * alpha * mu_0 * y + 2.0 * alpha)
+            + alpha * lambda * (-alpha * mu_0 * y));
 
     let c1 = coef * a2 / (a4 * a1 - a2 * a3);
     let c2 = -coef * a1 / (a4 * a1 - a2 * a3);
@@ -50,18 +61,14 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let coef = 1_f64 / alpha / 4_f64;
-    let e1 = f64::exp(alpha * y);
-    let e2 = f64::exp(-alpha * y);
-
+    let coef = 1.0 / ((1.0 + mu_0) * 4.0 * alpha);
     let (c1, c2, c3, c4) = coefficients(a, b, alpha, mu_0, g, lambda, load_function, eps);
 
-    let res = c1 * e1 * (y * alpha * mu_0 + 2_f64 + mu_0)
-        + c2 * e1 * (y * alpha * mu_0)
-        + c3 * e2 * (y * alpha * mu_0 - 2_f64 - mu_0)
-        + c4 * e2 * (-y * alpha * mu_0);
-
-    res * coef
+    let res = c1 * f64::exp(alpha * y) * (alpha * mu_0 * y + 2.0 + mu_0)
+        + c2 * f64::exp(alpha * y) * (alpha * mu_0 * y)
+        + c3 * f64::exp(-alpha * y) * (alpha * mu_0 * y - 2.0 - mu_0)
+        + c4 * f64::exp(-alpha * y) * (-alpha * mu_0 * y);
+    coef * res
 }
 
 fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
@@ -75,18 +82,15 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let coef = 1_f64 / alpha / 4_f64;
-    let e1 = f64::exp(alpha * y);
-    let e2 = f64::exp(-alpha * y);
+    let coef = 1.0 / ((1.0 + mu_0) * 4.0 * alpha);
 
     let (c1, c2, c3, c4) = coefficients(a, b, alpha, mu_0, g, lambda, load_function, eps);
 
-    let res = c1 * e1 * (-y * alpha * mu_0)
-        + c2 * e1 * (-y * alpha * mu_0 + 2_f64 + mu_0)
-        + c3 * e2 * (y * alpha * mu_0)
-        + c4 * e2 * (-y * alpha * mu_0 - 2_f64 - mu_0);
-
-    res * coef
+    let res = c1 * f64::exp(alpha * y) * (-alpha * mu_0 * y)
+        + c2 * f64::exp(alpha * y) * (-alpha * mu_0 * y + 2.0 + mu_0)
+        + c3 * f64::exp(-alpha * y) * (alpha * mu_0 * y)
+        + c4 * f64::exp(-alpha * y) * (-alpha * mu_0 * y - 2.0 - mu_0);
+    coef * res
 }
 
 fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
@@ -100,18 +104,15 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     load_function: &F,
     eps: f64,
 ) -> f64 {
-    let coef = 1.0 / alpha / 4.0;
-    let e1 = f64::exp(alpha * y);
-    let e2 = f64::exp(-alpha * y);
+    let coef = 1.0 / ((1.0 + mu_0) * 4.0 * alpha);
 
     let (c1, c2, c3, c4) = coefficients(a, b, alpha, mu_0, g, lambda, load_function, eps);
 
-    let res = c1 * e1 * (-y * alpha * alpha * mu_0 - alpha * mu_0)
-        + c2 * e1 * (-y * alpha * alpha * mu_0 + 2_f64 * alpha)
-        + c3 * e2 * (-y * alpha * alpha * mu_0 + alpha * mu_0)
-        + c4 * e2 * (y * alpha * alpha * mu_0 + 2_f64 * alpha);
-
-    res * coef
+    let res = c1 * f64::exp(alpha * y) * (-alpha * alpha * mu_0 * y - alpha * mu_0)
+        + c2 * f64::exp(alpha * y) * (-alpha * alpha * mu_0 * y + 2.0 * alpha)
+        + c3 * f64::exp(-alpha * y) * (-alpha * alpha * mu_0 * y + alpha * mu_0)
+        + c4 * f64::exp(-alpha * y) * (alpha * alpha * mu_0 * y + 2.0 * alpha);
+    coef * res
 }
 
 fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
@@ -128,16 +129,11 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let n = 10;
     let start = 1;
     let f = |i| {
-        if x != a && x != 0_f64 {
-            let alpha = PI * i as f64 / a;
-            2_f64
-                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                * f64::sin(alpha * x)
-                / a
-                / (1_f64 + mu_0)
-        } else {
-            0_f64
-        }
+        let alpha = PI * i as f64 / a;
+        2_f64
+            * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+            * f64::sin(alpha * x)
+            / a
     };
 
     sum_calc(&f, eps, start, n)
@@ -157,17 +153,12 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     let n = 10;
     let start = 1;
     let f = |i| {
-        if x != a && x != 0_f64 {
-            let alpha = PI * i as f64 / a;
-            2_f64
-                * alpha
-                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-                * f64::cos(alpha * x)
-                / a
-                / (1_f64 + mu_0)
-        } else {
-            0_f64
-        }
+        let alpha = PI * i as f64 / a;
+        2_f64
+            * alpha
+            * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+            * f64::cos(alpha * x)
+            / a
     };
 
     sum_calc(&f, eps, start, n)
@@ -194,7 +185,6 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
             * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
             * f64::cos(alpha * x)
             / a
-            / (1_f64 + mu_0)
     };
 
     v0 + sum_calc(&f, eps, start, n)
@@ -212,7 +202,7 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     eps: f64,
 ) -> f64 {
     let p0 = definite_integral(0_f64, a, 100, eps, load_function);
-    let v0 = -p0 * y / a / (2_f64 * g + lambda);
+    let v0 = -p0 / a / (2_f64 * g + lambda);
     let start = 1;
     let n = 10;
     let f = |i| {
@@ -220,7 +210,6 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
         2.0 * function_derivative_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
             * f64::cos(alpha * x)
             / a
-            / (1_f64 + mu_0)
     };
 
     v0 + sum_calc(&f, eps, start, n)
@@ -257,7 +246,7 @@ fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     let d_ux = function_derivative_u_x(a, b, x, y, mu_0, g, lambda, load_function, eps);
     let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-    2_f64 * g * d_vy + lambda * d_vy + lambda * d_ux
+    (2.0 * g + lambda) * d_vy + lambda * d_ux
 }
 
 #[cfg(test)]
@@ -276,14 +265,14 @@ mod run {
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
 
-        let load_function = |x| x * x - 7.5;
+        let load_function = |x: f64| (x - b / 2.0) * (x - b / 2.0);
         let eps = 0.1;
 
         let y = b;
         let a = b;
 
         let (x, y) = function_calculation(0.0, a, 100, |x| {
-            function_sigma_y(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+            function_sigma_x(a, b, x, y, mu_0, g, lambda, &load_function, eps)
         });
 
         let file_name = "static_1 function_u.txt";
@@ -296,6 +285,7 @@ mod run {
 mod tests {
     use super::*;
     use crate::utils::{g, lambda, mu_0};
+    use nalgebra::{Matrix2, Matrix2x1, RowVector1, RowVector2};
 
     #[test]
     fn coefficients_test() {
@@ -313,63 +303,72 @@ mod tests {
         for i in 1..10 {
             let alpha = PI * i as f64 / a;
 
-            let e1 = f64::exp(alpha * b);
-            let e2 = f64::exp(-alpha * b);
             let pn = definite_integral(0_f64, a, 100, eps, &|x| {
                 load_function(x) * f64::cos(alpha * x)
             });
+            println!("pn = {}", pn);
+            let coef = 1.0 / ((1.0 + mu_0) * 4.0 * alpha);
 
             let (c1, c2, c3, c4) = coefficients(a, b, alpha, mu_0, g, lambda, &load_function, eps);
 
-            let eq1 = c1
-                * e1
-                * (2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha * mu_0 + 2_f64 * alpha)
-                + c2 * e1 * (2_f64 * b * alpha * alpha * mu_0 - 2_f64 * alpha)
-                + c3 * e2
-                    * (-2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha + 2_f64 * alpha * mu_0)
-                + c4 * e2 * (2_f64 * b * alpha * alpha * mu_0 + 2_f64 * alpha);
-            let eq2 = c1
-                * e1
-                * (-2_f64 * g * b * alpha * alpha * mu_0 - 2_f64 * g * alpha * mu_0
-                    + 2_f64 * lambda * alpha)
-                + c2 * e1
-                    * (-2_f64 * g * b * alpha * alpha * mu_0
-                        + (2_f64 * g + lambda) * 2_f64 * alpha)
-                + c3 * e2
-                    * (-2_f64 * g * b * alpha * alpha * mu_0 + 2_f64 * g * alpha * mu_0
-                        - 2_f64 * lambda * alpha)
-                + c4 * e2
-                    * (2_f64 * g * b * alpha * alpha * mu_0 + (2_f64 * g + lambda) * 2_f64 * alpha);
-            let eq3 = c1 * (2_f64 * alpha + 2_f64 * alpha * mu_0)
-                + c2 * (-2_f64 * alpha)
-                + c3 * (2_f64 * alpha + 2_f64 * alpha * mu_0)
-                + c4 * (2_f64 * alpha);
-            let eq4 = c2 * (2_f64 + mu_0) + c4 * (-2_f64 - mu_0);
+            let z1 = |y: f64| {
+                let res = c1 * f64::exp(alpha * y) * (alpha * mu_0 * y + 2.0 + mu_0)
+                    + c2 * f64::exp(alpha * y) * (alpha * mu_0 * y)
+                    + c3 * f64::exp(-alpha * y) * (alpha * mu_0 * y - 2.0 - mu_0)
+                    + c4 * f64::exp(-alpha * y) * (-alpha * mu_0 * y);
+                coef * res
+            };
+            let z2 = |y: f64| {
+                let res = c1 * f64::exp(alpha * y) * (-alpha * mu_0 * y)
+                    + c2 * f64::exp(alpha * y) * (-alpha * mu_0 * y + 2.0 + mu_0)
+                    + c3 * f64::exp(-alpha * y) * (alpha * mu_0 * y)
+                    + c4 * f64::exp(-alpha * y) * (-alpha * mu_0 * y - 2.0 - mu_0);
+                coef * res
+            };
 
-            assert!(
-                f64::abs(eq1 - 0_f64) < eps,
-                "result: {}, exp: {}",
-                eq1,
-                0_f64
-            );
-            assert!(
-                f64::abs(eq2 + pn * 4_f64 * alpha * (1_f64 + mu_0)) < eps,
-                "result: {}, exp: {}",
-                eq2,
-                -pn * 4_f64 * alpha * (1_f64 + mu_0)
-            );
-            assert!(
-                f64::abs(eq3 - 0_f64) < eps,
-                "result: {}, exp: {}",
-                eq3,
-                0_f64
-            );
-            assert!(
-                f64::abs(eq4 - 0_f64) < eps,
-                "result: {}, exp: {}",
-                eq4,
-                0_f64
-            );
+            let der_z1 = |y: f64| {
+                let res = c1
+                    * f64::exp(alpha * y)
+                    * (alpha * alpha * mu_0 * y + 2.0 * alpha + mu_0 * alpha)
+                    + c2 * f64::exp(alpha * y) * (alpha * alpha * mu_0 * y + alpha * mu_0)
+                    + c3 * f64::exp(-alpha * y)
+                        * (-alpha * alpha * mu_0 * y + 2.0 * alpha + mu_0 * alpha)
+                    + c4 * f64::exp(-alpha * y) * (alpha * alpha * mu_0 * y - alpha * mu_0);
+                coef * res
+            };
+            let der_z2 = |y: f64| {
+                let res = c1 * f64::exp(alpha * y) * (-alpha * alpha * mu_0 * y - alpha * mu_0)
+                    + c2 * f64::exp(alpha * y) * (-alpha * alpha * mu_0 * y + 2.0 * alpha)
+                    + c3 * f64::exp(-alpha * y) * (-alpha * alpha * mu_0 * y + alpha * mu_0)
+                    + c4 * f64::exp(-alpha * y) * (alpha * alpha * mu_0 * y + 2.0 * alpha);
+                coef * res
+            };
+
+            let a_1 = Matrix2::from_rows(&[
+                RowVector2::new(1.0, 0.0),
+                RowVector2::new(0.0, 2.0 * g + lambda),
+            ]);
+            let a_2 = Matrix2::from_rows(&[
+                RowVector2::new(0.0, -alpha),
+                RowVector2::new(alpha * lambda, 0.0),
+            ]);
+
+            let res = a_1
+                * Matrix2x1::from_rows(&[RowVector1::new(der_z1(b)), RowVector1::new(der_z2(b))])
+                + a_2 * Matrix2x1::from_rows(&[RowVector1::new(z1(b)), RowVector1::new(z2(b))]);
+            println!("U_0[Z_n]: {}", res);
+
+            let a_1 = Matrix2::from_rows(&[RowVector2::new(1.0, 0.0), RowVector2::new(0.0, 0.0)]);
+            let a_2 =
+                Matrix2::from_rows(&[RowVector2::new(0.0, -alpha), RowVector2::new(0.0, 1.0)]);
+
+            let res = a_1
+                * Matrix2x1::from_rows(&[
+                    RowVector1::new(der_z1(0.0)),
+                    RowVector1::new(der_z2(0.0)),
+                ])
+                + a_2 * Matrix2x1::from_rows(&[RowVector1::new(z1(0.0)), RowVector1::new(z2(0.0))]);
+            println!("U_1[Z_n]: {}", res);
         }
     }
 }
