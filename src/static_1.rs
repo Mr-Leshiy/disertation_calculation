@@ -252,10 +252,12 @@ fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
 #[cfg(test)]
 mod run {
     use super::*;
-    use crate::utils::{function_calculation, function_plot, g, lambda, mu_0, save_function};
+    use crate::utils::{
+        function_calculation, function_plot, g, lambda, mu_0, save_function, FunctionData,
+    };
 
     #[test]
-    fn function_u_run() {
+    fn run() {
         let b = 15.0;
         // steel
         let puasson_coef = 0.25;
@@ -269,14 +271,39 @@ mod run {
         let eps = 0.1;
 
         let y = b;
-        let a = b;
-
-        let (x, y) = function_calculation(0.0, a, 100, |x| {
-            function_sigma_x(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+        
+        let a = b / 2.0;
+        let (res_x, res_y) = function_calculation(0.0, a, 100, |x| {
+            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
         });
+        let case1 = FunctionData {
+            x: &res_x,
+            y: &res_y,
+            label: "b = 15, a = b / 2",
+        };
 
-        let file_name = "static_1 function_u.txt";
-        let file = save_function(&x, &y, "x", "u(x,y)", file_name);
+        let a = b;
+        let (res_x, res_y) = function_calculation(0.0, a, 100, |x| {
+            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+        });
+        let case2 = FunctionData {
+            x: &res_x,
+            y: &res_y,
+            label: "b = 15, a = b",
+        };
+
+        let a = 2.0 * b;
+        let (res_x, res_y) = function_calculation(0.0, a, 100, |x| {
+            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
+        });
+        let case3 = FunctionData {
+            x: &res_x,
+            y: &res_y,
+            label: "b = 15, a = 2.0 * b",
+        };
+
+        let file_name = "test";
+        let file = save_function(vec![case1, case2], "x", "u(x,y)", file_name);
         function_plot(&file)
     }
 }

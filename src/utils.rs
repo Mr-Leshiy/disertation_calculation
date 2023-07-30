@@ -130,21 +130,32 @@ pub fn function_calculation<F: Fn(f64) -> f64 + Send + Sync>(
     (x, y)
 }
 
+pub struct FunctionData<'a> {
+    pub x: &'a [f64],
+    pub y: &'a [f64],
+    pub label: &'a str,
+}
+
 pub fn save_function(
-    x: &[f64],
-    y: &[f64],
+    data: Vec<FunctionData>,
     ox_name: &str,
     oy_name: &str,
     file_name: &str,
 ) -> PathBuf {
     let path = current_dir().unwrap().join(file_name);
     let mut file = File::create(&path).unwrap();
-    file.write_fmt(format_args!(
-        "{ox_name}|{oy_name}|{}|{}",
-        serde_json::to_string(&x).unwrap(),
-        serde_json::to_string(&y).unwrap()
-    ))
-    .unwrap();
+    file.write_fmt(format_args!("{ox_name}|{oy_name}",))
+        .unwrap();
+    for data in data {
+        file.write_fmt(format_args!(
+            "|{}|{}|{}",
+            serde_json::to_string(data.x).unwrap(),
+            serde_json::to_string(data.y).unwrap(),
+            data.label,
+        ))
+        .unwrap();
+    }
+
     path
 }
 
@@ -232,8 +243,18 @@ mod tests {
     #[test]
     fn function_plot_test() {
         let path = save_function(
-            &vec![1_f64, 2_f64, 3_f64],
-            &vec![1_f64, 2_f64, 3_f64],
+            vec![
+                FunctionData {
+                    x: &vec![1_f64, 2_f64, 3_f64],
+                    y: &vec![1_f64, 2_f64, 3_f64],
+                    label: "func 1",
+                },
+                FunctionData {
+                    x: &vec![1_f64, 2_f64, 3_f64],
+                    y: &vec![2_f64, 4_f64, 6_f64],
+                    label: "func 2",
+                },
+            ],
             "x",
             "y",
             "tmp",

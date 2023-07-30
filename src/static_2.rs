@@ -178,12 +178,8 @@ fn psi(
     mu_0: f64,
     g: f64,
     lambda: f64,
-) -> (
-    ((f64, f64, f64, f64), (f64, f64, f64, f64)),
-    ((f64, f64, f64, f64), (f64, f64, f64, f64)),
-) {
-    let (a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, a_9, a_10, a_11, a_12, a_13, a_14, a_15, a_16) =
-        a_functions(alpha, mu_0);
+) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
+    let (a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, _, _, _, _, _, _, _, _) = a_functions(alpha, mu_0);
     let (
         ((d_1_0, d_2_0, d_3_0, d_4_0), (f_1_0, f_2_0, f_3_0, f_4_0)),
         ((d_1_1, d_2_1, d_3_1, d_4_1), (f_1_1, f_2_1, f_3_1, f_4_1)),
@@ -199,6 +195,27 @@ fn psi(
     let psi_3_1 = a_5(y) * d_1_1 + a_6(y) * d_3_1 + a_7(y) * f_1_1 + a_8(y) * f_3_1;
     let psi_4_1 = a_5(y) * d_2_1 + a_6(y) * d_4_1 + a_7(y) * f_2_1 + a_8(y) * f_4_1;
 
+    (
+        (psi_1_0, psi_2_0, psi_3_0, psi_4_0),
+        (psi_1_1, psi_2_1, psi_3_1, psi_4_1),
+    )
+}
+
+fn der_psi(
+    y: f64,
+    b: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+) -> ((f64, f64, f64, f64), (f64, f64, f64, f64)) {
+    let (_, _, _, _, _, _, _, _, a_9, a_10, a_11, a_12, a_13, a_14, a_15, a_16) =
+        a_functions(alpha, mu_0);
+    let (
+        ((d_1_0, d_2_0, d_3_0, d_4_0), (f_1_0, f_2_0, f_3_0, f_4_0)),
+        ((d_1_1, d_2_1, d_3_1, d_4_1), (f_1_1, f_2_1, f_3_1, f_4_1)),
+    ) = coefficients(b, alpha, mu_0, g, lambda);
+
     let der_psi_1_0 = a_9(y) * d_1_0 + a_10(y) * d_3_0 + a_11(y) * f_1_0 + a_12(y) * f_3_0;
     let der_psi_2_0 = a_9(y) * d_2_0 + a_10(y) * d_4_0 + a_11(y) * f_2_0 + a_12(y) * f_4_0;
     let der_psi_3_0 = a_13(y) * d_1_0 + a_14(y) * d_3_0 + a_15(y) * f_1_0 + a_16(y) * f_3_0;
@@ -210,14 +227,8 @@ fn psi(
     let der_psi_4_1 = a_13(y) * d_2_1 + a_14(y) * d_4_1 + a_15(y) * f_2_1 + a_16(y) * f_4_1;
 
     (
-        (
-            (psi_1_0, psi_2_0, psi_3_0, psi_4_0),
-            (psi_1_1, psi_2_1, psi_3_1, psi_4_1),
-        ),
-        (
-            (der_psi_1_0, der_psi_2_0, der_psi_3_0, der_psi_4_0),
-            (der_psi_1_1, der_psi_2_1, der_psi_3_1, der_psi_4_1),
-        ),
+        (der_psi_1_0, der_psi_2_0, der_psi_3_0, der_psi_4_0),
+        (der_psi_1_1, der_psi_2_1, der_psi_3_1, der_psi_4_1),
     )
 }
 
@@ -231,18 +242,53 @@ fn greens(
     lambda: f64,
 ) -> (f64, f64, f64, f64) {
     let (
-        (
-            (y_psi_1_0, y_psi_2_0, y_psi_3_0, y_psi_4_0),
-            (y_psi_1_1, y_psi_2_1, y_psi_3_1, y_psi_4_1),
-        ),
-        _,
+        (y_psi_1_0, y_psi_2_0, y_psi_3_0, y_psi_4_0),
+        (y_psi_1_1, y_psi_2_1, y_psi_3_1, y_psi_4_1),
     ) = psi(y, b, alpha, mu_0, g, lambda);
     let (
-        (
-            (xi_psi_1_0, xi_psi_2_0, xi_psi_3_0, xi_psi_4_0),
-            (xi_psi_1_1, xi_psi_2_1, xi_psi_3_1, xi_psi_4_1),
-        ),
-        _,
+        (xi_psi_1_0, xi_psi_2_0, xi_psi_3_0, xi_psi_4_0),
+        (xi_psi_1_1, xi_psi_2_1, xi_psi_3_1, xi_psi_4_1),
+    ) = psi(xi, b, alpha, mu_0, g, lambda);
+
+    let g1 = if y < xi {
+        y_psi_1_0 * xi_psi_1_1 + y_psi_2_0 * xi_psi_3_1
+    } else {
+        y_psi_1_1 * xi_psi_1_0 + y_psi_2_1 * xi_psi_3_0
+    };
+    let g2 = if y < xi {
+        y_psi_1_0 * xi_psi_2_1 + y_psi_2_0 * xi_psi_4_1
+    } else {
+        y_psi_1_1 * xi_psi_2_0 + y_psi_2_1 * xi_psi_4_0
+    };
+    let g3 = if y < xi {
+        y_psi_3_0 * xi_psi_1_1 + y_psi_4_0 * xi_psi_3_1
+    } else {
+        y_psi_3_1 * xi_psi_1_0 + y_psi_4_1 * xi_psi_3_0
+    };
+    let g4 = if y < xi {
+        y_psi_3_0 * xi_psi_2_1 + y_psi_4_0 * xi_psi_4_1
+    } else {
+        y_psi_3_1 * xi_psi_2_0 + y_psi_4_1 * xi_psi_4_0
+    };
+    (g1, g2, g3, g4)
+}
+
+fn greens_dy(
+    y: f64,
+    xi: f64,
+    b: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+) -> (f64, f64, f64, f64) {
+    let (
+        (y_psi_1_0, y_psi_2_0, y_psi_3_0, y_psi_4_0),
+        (y_psi_1_1, y_psi_2_1, y_psi_3_1, y_psi_4_1),
+    ) = der_psi(y, b, alpha, mu_0, g, lambda);
+    let (
+        (xi_psi_1_0, xi_psi_2_0, xi_psi_3_0, xi_psi_4_0),
+        (xi_psi_1_1, xi_psi_2_1, xi_psi_3_1, xi_psi_4_1),
     ) = psi(xi, b, alpha, mu_0, g, lambda);
 
     let g1 = if y < xi {
@@ -284,7 +330,7 @@ fn a_1<F: Fn(f64) -> f64 + Send + Sync>(
         .into_par_iter()
         .map(|n| {
             let alpha = alpha_calc(a, n as f64);
-            let (((_, psi_2_0, _, _), _), _) = psi(y, b, alpha, mu_0, g, lambda);
+            let ((_, psi_2_0, _, _), _) = psi(y, b, alpha, mu_0, g, lambda);
             let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
             let pn =
                 definite_integral(0.0, a, 50, eps, &|x| load_function(x) * f64::cos(alpha * x));
@@ -399,7 +445,7 @@ fn phi<F: Fn(f64) -> f64 + Send + Sync>(
     right.qr().solve(&left).unwrap()
 }
 
-fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     xi: f64,
     a: f64,
     b: f64,
@@ -412,7 +458,7 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     let phi = phi(a, b, mu_0, g, lambda, &load_function, eps);
 
     // let sqrt = f64::sqrt(1.0 - xi * xi);
-    let sum = (0..N)
+    let sum: f64 = (0..N)
         .into_par_iter()
         .map(|k| phi.get(k).unwrap_or(&0.0) * chebyshev(xi, k))
         .sum();
@@ -420,7 +466,7 @@ fn unknown_function<F: Fn(f64) -> f64 + Send + Sync>(
     sum
 }
 
-fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     y: f64,
     n: usize,
     a: f64,
@@ -434,7 +480,7 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     let alpha = alpha_calc(a, n as f64);
     let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
     let pn = definite_integral_limit(0.0, a, 10, &|x| load_function(x) * f64::cos(alpha * x));
-    let (((_, psi_2_0, _, _), _), _) = psi(y, b, alpha, mu_0, g, lambda);
+    let ((_, psi_2_0, _, _), _) = psi(y, b, alpha, mu_0, g, lambda);
 
     let f = |xi: f64| {
         let xi = b / 2.0 * xi + b / 2.0;
@@ -450,7 +496,67 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     coef * int_val - psi_2_0 * pn
 }
 
-fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
+    y: f64,
+    n: usize,
+    a: f64,
+    b: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let alpha = alpha_calc(a, n as f64);
+    let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
+    let pn = definite_integral_limit(0.0, a, 10, &|x| load_function(x) * f64::cos(alpha * x));
+    let ((_, _, _, psi_4_0), _) = psi(y, b, alpha, mu_0, g, lambda);
+
+    let f = |xi: f64| {
+        let xi = b / 2.0 * xi + b / 2.0;
+
+        let unknown_fn = unknown_function(xi, a, b, mu_0, g, lambda, &load_function, eps);
+        let (_, _, g3, _) = greens(y, xi, b, alpha, mu_0, g, lambda);
+        g3 * unknown_fn
+    };
+    let int_val = sqrt_gauss_integral_finit(15, &f);
+
+    let coef = sign * (1.0 + mu_0) * b / 2.0;
+
+    coef * int_val - psi_4_0 * pn
+}
+
+fn function_der_vn<F: Fn(f64) -> f64 + Send + Sync>(
+    y: f64,
+    n: usize,
+    a: f64,
+    b: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let alpha = alpha_calc(a, n as f64);
+    let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
+    let pn = definite_integral_limit(0.0, a, 10, &|x| load_function(x) * f64::cos(alpha * x));
+    let ((_, _, _, psi_4_0), _) = psi(y, b, alpha, mu_0, g, lambda);
+
+    let f = |xi: f64| {
+        let xi = b / 2.0 * xi + b / 2.0;
+
+        let unknown_fn = unknown_function(xi, a, b, mu_0, g, lambda, &load_function, eps);
+        let (_, _, g3, _) = greens_dy(y, xi, b, alpha, mu_0, g, lambda);
+        g3 * unknown_fn
+    };
+    let int_val = sqrt_gauss_integral_finit(15, &f);
+
+    let coef = sign * (1.0 + mu_0) * b / 2.0;
+
+    coef * int_val - psi_4_0 * pn
+}
+
+pub fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -464,48 +570,112 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let n = 3;
     let start = 1;
     let f = |n| {
-        if x != 0.0 {
-            let alpha = alpha_calc(a, n as f64);
-            2.0 * function_un(y, n, a, b, mu_0, g, lambda, load_function, eps) * f64::sin(alpha * x)
-                / a
-        } else {
-            0.0
-        }
+        let alpha = alpha_calc(a, n as f64);
+        2.0 * function_un(y, n, a, b, mu_0, g, lambda, load_function, eps) * f64::sin(alpha * x) / a
     };
 
     sum_calc_finit(&f, start, n)
 }
 
-#[cfg(test)]
-mod run {
-    use super::*;
-    use crate::utils::{function_calculation, function_plot, g, lambda, mu_0, save_function};
+pub fn function_u_dx<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let n = 3;
+    let start = 1;
+    let f = |n| {
+        let alpha = alpha_calc(a, n as f64);
+        2.0 * alpha
+            * function_un(y, n, a, b, mu_0, g, lambda, load_function, eps)
+            * f64::cos(alpha * x)
+            / a
+    };
 
-    #[test]
-    fn function_u_run() {
-        let a = 10.0;
-        let b = 15.0;
-        // steel
-        let puasson_coef = 0.25;
-        let young_modulus = 200.0;
+    sum_calc_finit(&f, start, n)
+}
 
-        let g = g(puasson_coef, young_modulus);
-        let lambda = lambda(puasson_coef, young_modulus);
-        let mu_0 = mu_0(puasson_coef);
+pub fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let n = 3;
+    let start = 1;
+    let f = |n| {
+        let alpha = alpha_calc(a, n as f64);
+        2.0 * function_vn(y, n, a, b, mu_0, g, lambda, load_function, eps) * f64::cos(alpha * x) / a
+    };
 
-        let load_function = |x| x * x;
-        let eps = 0.1;
+    sum_calc_finit(&f, start, n)
+}
 
-        let y = 1.0;
+pub fn function_v_dy<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let n = 3;
+    let start = 1;
+    let f = |n| {
+        let alpha = alpha_calc(a, n as f64);
+        2.0 * function_der_vn(y, n, a, b, mu_0, g, lambda, load_function, eps) * f64::cos(alpha * x)
+            / a
+    };
 
-        let (x, y) = function_calculation(0.0, a, 100, |x| {
-            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
-        });
+    sum_calc_finit(&f, start, n)
+}
 
-        let file_name = "problem1 function_u.txt";
-        let file = save_function(&x, &y, "x", "u(x,y)", file_name);
-        function_plot(&file)
-    }
+fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let d_ux = function_u_dx(a, b, x, y, mu_0, g, lambda, load_function, eps);
+    let d_vy = function_v_dy(a, b, x, y, mu_0, g, lambda, load_function, eps);
+
+    2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
+}
+
+fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let d_ux = function_u_dx(a, b, x, y, mu_0, g, lambda, load_function, eps);
+    let d_vy = function_v_dy(a, b, x, y, mu_0, g, lambda, load_function, eps);
+
+    (2.0 * g + lambda) * d_vy + lambda * d_ux
 }
 
 #[cfg(test)]
@@ -581,25 +751,21 @@ mod tests {
         let alpha = PI / a * 2.0;
 
         let (
-            (
-                (b_psi_1_0, b_psi_2_0, b_psi_3_0, b_psi_4_0),
-                (b_psi_1_1, b_psi_2_1, b_psi_3_1, b_psi_4_1),
-            ),
-            (
-                (b_der_psi_1_0, b_der_psi_2_0, b_der_psi_3_0, b_der_psi_4_0),
-                (b_der_psi_1_1, b_der_psi_2_1, b_der_psi_3_1, b_der_psi_4_1),
-            ),
+            (b_psi_1_0, b_psi_2_0, b_psi_3_0, b_psi_4_0),
+            (b_psi_1_1, b_psi_2_1, b_psi_3_1, b_psi_4_1),
         ) = psi(b, b, alpha, mu_0, g, lambda);
         let (
-            (
-                (zero_psi_1_0, zero_psi_2_0, zero_psi_3_0, zero_psi_4_0),
-                (zero_psi_1_1, zero_psi_2_1, zero_psi_3_1, zero_psi_4_1),
-            ),
-            (
-                (zero_der_psi_1_0, zero_der_psi_2_0, zero_der_psi_3_0, zero_der_psi_4_0),
-                (zero_der_psi_1_1, zero_der_psi_2_1, zero_der_psi_3_1, zero_der_psi_4_1),
-            ),
+            (b_der_psi_1_0, b_der_psi_2_0, b_der_psi_3_0, b_der_psi_4_0),
+            (b_der_psi_1_1, b_der_psi_2_1, b_der_psi_3_1, b_der_psi_4_1),
+        ) = der_psi(b, b, alpha, mu_0, g, lambda);
+        let (
+            (zero_psi_1_0, zero_psi_2_0, zero_psi_3_0, zero_psi_4_0),
+            (zero_psi_1_1, zero_psi_2_1, zero_psi_3_1, zero_psi_4_1),
         ) = psi(0.0, b, alpha, mu_0, g, lambda);
+        let (
+            (zero_der_psi_1_0, zero_der_psi_2_0, zero_der_psi_3_0, zero_der_psi_4_0),
+            (zero_der_psi_1_1, zero_der_psi_2_1, zero_der_psi_3_1, zero_der_psi_4_1),
+        ) = der_psi(0.0, b, alpha, mu_0, g, lambda);
 
         let a_1 = Matrix2::from_rows(&[
             RowVector2::new(1.0, 0.0),
@@ -671,7 +837,7 @@ mod tests {
         for n in 1..50 {
             let alpha = PI / a * (n as f64 - 0.5);
 
-            let (((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)), _) =
+            let ((psi_1_0, psi_2_0, psi_3_0, psi_4_0), (psi_1_1, psi_2_1, psi_3_1, psi_4_1)) =
                 psi(b, b, alpha, mu_0, g, lambda);
 
             println!("alpha: {alpha}");
@@ -788,5 +954,28 @@ mod tests {
 
         let unknown_function = unknown_function(xi, a, b, mu_0, g, lambda, &load_function, eps);
         println!("unknown_function: {}", unknown_function);
+    }
+
+    #[test]
+    fn random_test() {
+        let a = 10.0;
+        let b = 15.0;
+        // steel
+        let puasson_coef = 0.25;
+        let young_modulus = 200.0;
+
+        let g = g(puasson_coef, young_modulus);
+        let lambda = lambda(puasson_coef, young_modulus);
+        let mu_0 = mu_0(puasson_coef);
+
+        let load_function = |x| x * x;
+        let eps = 0.1;
+
+        let y = b;
+        let x = 0.5;
+
+        let res = function_un(y, 1, a, b, mu_0, g, lambda, &load_function, eps);
+
+        println!("res: {}", res);
     }
 }
