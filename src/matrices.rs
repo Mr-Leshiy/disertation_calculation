@@ -264,6 +264,21 @@ mod tests {
 
     #[test]
     fn lib_test() {
-        
+        use nalgebra::{Matrix3, Matrix3x1, RowVector1, RowVector3};
+
+        let a = Matrix3::from_rows(&[
+            RowVector3::new(2_f64, 1_f64, -1_f64),
+            RowVector3::new(-3_f64, -1_f64, 2_f64),
+            RowVector3::new(-2_f64, 1_f64, 2_f64),
+        ]);
+        let b = Matrix3x1::from_rows(&[
+            RowVector1::new(8_f64),
+            RowVector1::new(-11_f64),
+            RowVector1::new(-3_f64),
+        ]);
+
+        let res = a.qr().solve(&b);
+
+        println!("{:?}", res);
     }
 }
