@@ -71,6 +71,27 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     coef * res
 }
 
+fn function_derivative_un<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    y: f64,
+    alpha: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let coef = 1.0 / ((1.0 + mu_0) * 4.0 * alpha);
+    let (c1, c2, c3, c4) = coefficients(a, b, alpha, mu_0, g, lambda, load_function, eps);
+
+    let res = c1 * f64::exp(alpha * y) * (alpha * alpha * mu_0 * y + 2.0 * alpha + mu_0 * alpha)
+        + c2 * f64::exp(alpha * y) * (alpha * alpha * mu_0 * y + alpha * mu_0)
+        + c3 * f64::exp(-alpha * y) * (-alpha * alpha * mu_0 * y + 2.0 * alpha + mu_0 * alpha)
+        + c4 * f64::exp(-alpha * y) * (alpha * alpha * mu_0 * y - alpha * mu_0);
+    coef * res
+}
+
 fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
@@ -115,7 +136,7 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     coef * res
 }
 
-fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -130,16 +151,20 @@ fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     let start = 1;
     let f = |i| {
         let alpha = PI * i as f64 / a;
-        2_f64
-            * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
-            * f64::sin(alpha * x)
-            / a
+        if x != a {
+            2_f64
+                * function_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+                * f64::sin(alpha * x)
+                / a
+        } else {
+            0.0
+        }
     };
 
     sum_calc(&f, eps, start, n)
 }
 
-fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -164,7 +189,31 @@ fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     sum_calc(&f, eps, start, n)
 }
 
-fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_u_y<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let n = 10;
+    let start = 1;
+    let f = |i| {
+        let alpha = PI * i as f64 / a;
+        2_f64
+            * function_derivative_un(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+            * f64::sin(alpha * x)
+            / a
+    };
+
+    sum_calc(&f, eps, start, n)
+}
+
+pub fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -190,7 +239,7 @@ fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     v0 + sum_calc(&f, eps, start, n)
 }
 
-fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -215,7 +264,32 @@ fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     v0 + sum_calc(&f, eps, start, n)
 }
 
-fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_v_x<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let n = 10;
+    let start = 1;
+    let f = |i| {
+        let alpha = PI * i as f64 / a;
+        -2_f64
+            * alpha
+            * function_vn(a, b, y, alpha, mu_0, g, lambda, load_function, eps)
+            * f64::sin(alpha * x)
+            / a
+    };
+
+    sum_calc(&f, eps, start, n)
+}
+
+pub fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -232,7 +306,7 @@ fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
     2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
 }
 
-fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     a: f64,
     b: f64,
     x: f64,
@@ -249,63 +323,21 @@ fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     (2.0 * g + lambda) * d_vy + lambda * d_ux
 }
 
-#[cfg(test)]
-mod run {
-    use super::*;
-    use crate::utils::{
-        function_calculation, function_plot, g, lambda, mu_0, save_function, FunctionData,
-    };
+pub fn function_tau_xy<F: Fn(f64) -> f64 + Send + Sync>(
+    a: f64,
+    b: f64,
+    x: f64,
+    y: f64,
+    mu_0: f64,
+    g: f64,
+    lambda: f64,
+    load_function: &F,
+    eps: f64,
+) -> f64 {
+    let d_uy = function_derivative_u_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
+    let d_vx = function_derivative_v_x(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-    #[test]
-    fn run() {
-        let b = 15.0;
-        // steel
-        let puasson_coef = 0.25;
-        let young_modulus = 200.0;
-
-        let g = g(puasson_coef, young_modulus);
-        let lambda = lambda(puasson_coef, young_modulus);
-        let mu_0 = mu_0(puasson_coef);
-
-        let load_function = |x: f64| (x - b / 2.0) * (x - b / 2.0);
-        let eps = 0.1;
-
-        let y = b;
-        
-        let a = b / 2.0;
-        let (res_x, res_y) = function_calculation(0.0, a, 100, |x| {
-            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
-        });
-        let case1 = FunctionData {
-            x: &res_x,
-            y: &res_y,
-            label: "b = 15, a = b / 2",
-        };
-
-        let a = b;
-        let (res_x, res_y) = function_calculation(0.0, a, 100, |x| {
-            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
-        });
-        let case2 = FunctionData {
-            x: &res_x,
-            y: &res_y,
-            label: "b = 15, a = b",
-        };
-
-        let a = 2.0 * b;
-        let (res_x, res_y) = function_calculation(0.0, a, 100, |x| {
-            function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
-        });
-        let case3 = FunctionData {
-            x: &res_x,
-            y: &res_y,
-            label: "b = 15, a = 2.0 * b",
-        };
-
-        let file_name = "test";
-        let file = save_function(vec![case1, case2], "x", "u(x,y)", file_name);
-        function_plot(&file)
-    }
+    d_vx + d_uy
 }
 
 #[cfg(test)]
