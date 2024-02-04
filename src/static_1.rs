@@ -1,8 +1,8 @@
-use crate::{integration::definite_integral, utils::sum_calc};
+use crate::{integration::definite_integral, utils::sum_calc, LoadFuncT};
 use std::f64::consts::PI;
 
 // returns c1, c2, c3, c4 coefficients
-fn coefficients<F: Fn(f64) -> f64 + Send + Sync>(
+fn coefficients<F: LoadFuncT>(
     a: f64,
     b: f64,
     alpha: f64,
@@ -50,7 +50,7 @@ fn coefficients<F: Fn(f64) -> f64 + Send + Sync>(
     (c1, c2, c3, c4)
 }
 
-fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
+fn function_un<F: LoadFuncT>(
     a: f64,
     b: f64,
     y: f64,
@@ -71,7 +71,7 @@ fn function_un<F: Fn(f64) -> f64 + Send + Sync>(
     coef * res
 }
 
-fn function_derivative_un<F: Fn(f64) -> f64 + Send + Sync>(
+fn function_derivative_un<F: LoadFuncT>(
     a: f64,
     b: f64,
     y: f64,
@@ -92,7 +92,7 @@ fn function_derivative_un<F: Fn(f64) -> f64 + Send + Sync>(
     coef * res
 }
 
-fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
+fn function_vn<F: LoadFuncT>(
     a: f64,
     b: f64,
     y: f64,
@@ -114,7 +114,7 @@ fn function_vn<F: Fn(f64) -> f64 + Send + Sync>(
     coef * res
 }
 
-fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
+fn function_derivative_vn<F: LoadFuncT>(
     a: f64,
     b: f64,
     y: f64,
@@ -136,7 +136,7 @@ fn function_derivative_vn<F: Fn(f64) -> f64 + Send + Sync>(
     coef * res
 }
 
-pub fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_u<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -164,7 +164,7 @@ pub fn function_u<F: Fn(f64) -> f64 + Send + Sync>(
     sum_calc(&f, eps, start, n)
 }
 
-pub fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_u_x<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -189,7 +189,7 @@ pub fn function_derivative_u_x<F: Fn(f64) -> f64 + Send + Sync>(
     sum_calc(&f, eps, start, n)
 }
 
-pub fn function_derivative_u_y<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_u_y<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -213,7 +213,7 @@ pub fn function_derivative_u_y<F: Fn(f64) -> f64 + Send + Sync>(
     sum_calc(&f, eps, start, n)
 }
 
-pub fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_v<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -239,7 +239,7 @@ pub fn function_v<F: Fn(f64) -> f64 + Send + Sync>(
     v0 + sum_calc(&f, eps, start, n)
 }
 
-pub fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_v_y<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -264,7 +264,7 @@ pub fn function_derivative_v_y<F: Fn(f64) -> f64 + Send + Sync>(
     v0 + sum_calc(&f, eps, start, n)
 }
 
-pub fn function_derivative_v_x<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_derivative_v_x<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -289,7 +289,7 @@ pub fn function_derivative_v_x<F: Fn(f64) -> f64 + Send + Sync>(
     sum_calc(&f, eps, start, n)
 }
 
-pub fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_sigma_x<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -306,7 +306,7 @@ pub fn function_sigma_x<F: Fn(f64) -> f64 + Send + Sync>(
     2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
 }
 
-pub fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_sigma_y<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,
@@ -323,7 +323,7 @@ pub fn function_sigma_y<F: Fn(f64) -> f64 + Send + Sync>(
     (2.0 * g + lambda) * d_vy + lambda * d_ux
 }
 
-pub fn function_tau_xy<F: Fn(f64) -> f64 + Send + Sync>(
+pub fn function_tau_xy<F: LoadFuncT>(
     a: f64,
     b: f64,
     x: f64,

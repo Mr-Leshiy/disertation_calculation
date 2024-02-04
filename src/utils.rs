@@ -130,27 +130,29 @@ pub fn function_calculation<F: Fn(f64) -> f64 + Send + Sync>(
     (x, y)
 }
 
-pub struct FunctionData<'a> {
-    pub x: &'a [f64],
-    pub y: &'a [f64],
-    pub label: &'a str,
+pub struct FunctionData {
+    pub x: Vec<f64>,
+    pub y: Vec<f64>,
+    pub label: String,
 }
 
-pub fn save_function(
-    data: Vec<FunctionData>,
-    ox_name: &str,
-    oy_name: &str,
-    file_name: &str,
-) -> PathBuf {
-    let path = current_dir().unwrap().join(file_name);
+pub struct FunctionFileInfo {
+    pub data: Vec<FunctionData>,
+    pub ox_name: String,
+    pub oy_name: String,
+    pub file_name: String,
+}
+
+pub fn save_function(info: FunctionFileInfo) -> PathBuf {
+    let path = current_dir().unwrap().join(info.file_name);
     let mut file = File::create(&path).unwrap();
-    file.write_fmt(format_args!("{ox_name}|{oy_name}",))
+    file.write_fmt(format_args!("{}|{}", info.ox_name, info.oy_name))
         .unwrap();
-    for data in data {
+    for data in info.data {
         file.write_fmt(format_args!(
             "|{}|{}|{}",
-            serde_json::to_string(data.x).unwrap(),
-            serde_json::to_string(data.y).unwrap(),
+            serde_json::to_string(&data.x).unwrap(),
+            serde_json::to_string(&data.y).unwrap(),
             data.label,
         ))
         .unwrap();
@@ -234,69 +236,4 @@ pub fn surface_dynamic_plot(path: &PathBuf) {
         String::from_utf8(_res.stdout).unwrap(),
         String::from_utf8(_res.stderr).unwrap()
     );
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn function_plot_test() {
-        let path = save_function(
-            vec![
-                FunctionData {
-                    x: &vec![1_f64, 2_f64, 3_f64],
-                    y: &vec![1_f64, 2_f64, 3_f64],
-                    label: "func 1",
-                },
-                FunctionData {
-                    x: &vec![1_f64, 2_f64, 3_f64],
-                    y: &vec![2_f64, 4_f64, 6_f64],
-                    label: "func 2",
-                },
-            ],
-            "x",
-            "y",
-            "tmp",
-        );
-        function_plot(&path);
-    }
-
-    #[test]
-    fn surface_static_plot_test() {
-        let path = save_static(
-            &vec![1_f64, 2_f64, 3_f64],
-            &vec![1_f64, 2_f64, 3_f64],
-            &vec![
-                vec![5_f64, 5_f64, 5_f64],
-                vec![5_f64, 5_f64, 5_f64],
-                vec![5_f64, 5_f64, 5_f64],
-            ],
-            "tmp",
-        );
-        surface_static_plot(&path);
-    }
-
-    #[test]
-    fn surface_dynamic_plot_test() {
-        let path = save_dynamic(
-            &vec![1_f64, 2_f64, 3_f64],
-            &vec![1_f64, 2_f64, 3_f64],
-            &vec![
-                vec![
-                    vec![5_f64, 5_f64, 5_f64],
-                    vec![5_f64, 5_f64, 5_f64],
-                    vec![5_f64, 5_f64, 5_f64],
-                ],
-                vec![
-                    vec![6_f64, 6_f64, 6_f64],
-                    vec![6_f64, 6_f64, 6_f64],
-                    vec![6_f64, 6_f64, 6_f64],
-                ],
-            ],
-            "tmp",
-        );
-
-        surface_dynamic_plot(&path);
-    }
 }

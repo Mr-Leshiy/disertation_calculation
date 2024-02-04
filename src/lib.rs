@@ -1,6 +1,8 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(dead_code)]
 
+use utils::{function_calculation, g, lambda, mu_0, FunctionData, FunctionFileInfo};
+
 mod dynamic_1;
 mod integration;
 mod matrices;
@@ -9,43 +11,214 @@ mod static_1;
 mod static_2;
 mod utils;
 
-#[cfg(test)]
-mod run {
-    use super::*;
-    use crate::utils::{
-        function_calculation, function_plot, g, lambda, mu_0, save_function, FunctionData,
-    };
+trait LoadFuncT: Fn(f64) -> f64 + Send + Sync {}
+impl<F: Fn(f64) -> f64 + Send + Sync> LoadFuncT for F {}
 
-    #[test]
-    fn run() {
-        let a = 10.0;
-        let b = 15.0;
-        // steel
-        let puasson_coef = 0.25;
-        let young_modulus = 200.0;
+struct FunctionCalculation<Func: LoadFuncT> {
+    a1: f64,
+    a2: f64,
 
+    b1: f64,
+    b2: f64,
+
+    puasson_coef: f64,
+    young_modulus: f64,
+
+    g: f64,
+    lambda: f64,
+    mu_0: f64,
+
+    load_function: Func,
+
+    eps: f64,
+}
+
+impl<Func: LoadFuncT> FunctionCalculation<Func> {
+    fn new(
+        a1: f64,
+        a2: f64,
+        b1: f64,
+        b2: f64,
+        puasson_coef: f64,
+        young_modulus: f64,
+        load_function: Func,
+        eps: f64,
+    ) -> Self {
         let g = g(puasson_coef, young_modulus);
         let lambda = lambda(puasson_coef, young_modulus);
         let mu_0 = mu_0(puasson_coef);
 
+        Self {
+            a1,
+            a2,
+            b1,
+            b2,
+            puasson_coef,
+            young_modulus,
+            g,
+            lambda,
+            mu_0,
+            load_function,
+            eps,
+        }
+    }
+
+    fn static_1_function_u_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for x in x {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
+                static_1::function_u(
+                    self.a2,
+                    self.b2,
+                    *x,
+                    y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, x = {}", self.a2, self.b2, x),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "y".to_string(),
+            oy_name: "u_x(x,y)".to_string(),
+            file_name: format!("static_1_function_u_x"),
+        }
+    }
+
+    fn static_1_function_u_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for y in y {
+            let (res_x, res_y) = function_calculation(self.a1, self.a2, 100, |x| {
+                static_1::function_u(
+                    self.a2,
+                    self.b2,
+                    x,
+                    *y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, y = {}", self.a2, self.b2, y),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "x".to_string(),
+            oy_name: "u_x(x,y)".to_string(),
+            file_name: format!("static_1_function_u_x"),
+        }
+    }
+
+    fn static_1_function_v_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for x in x {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
+                static_1::function_v(
+                    self.a2,
+                    self.b2,
+                    *x,
+                    y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, x = {}", self.a2, self.b2, x),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "y".to_string(),
+            oy_name: "u_y(x,y)".to_string(),
+            file_name: format!("static_1_function_u_y"),
+        }
+    }
+
+    fn static_1_function_v_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for y in y {
+            let (res_x, res_y) = function_calculation(self.a1, self.a2, 100, |x| {
+                static_1::function_v(
+                    self.a2,
+                    self.b2,
+                    x,
+                    *y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, y = {}", self.a2, self.b2, y),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "x".to_string(),
+            oy_name: "u_y(x,y)".to_string(),
+            file_name: format!("static_1_function_u_y"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod run {
+    use super::*;
+    use crate::utils::{function_plot, save_function};
+
+    #[test]
+    fn run() {
+        let b = 15.0;
+        let a = b / 2.0;
+
+        // steel
+        let puasson_coef = 0.25;
+        let young_modulus = 200.0;
+
         let load_function = |x| (x - 5.5) * (x - 5.5);
         let eps = 0.1;
 
-        let n = 5;
+        let func_calc = FunctionCalculation::new(
+            0.0,
+            a,
+            0.0,
+            b,
+            puasson_coef,
+            young_modulus,
+            load_function,
+            eps,
+        );
 
-        let y = 1.0;
+        let res = func_calc.static_1_function_v_fixed_x(&[a / 2.0, a]);
 
-        let (res_x, res_y) = function_calculation(-a, a, 100, |x| {
-            static_2::function_u(a, b, x, y, mu_0, g, lambda, &load_function, eps)
-        });
-        let case1 = FunctionData {
-            x: &res_x,
-            y: &res_y,
-            label: "",
-        };
-
-        let file_name = "test";
-        let file = save_function(vec![case1], "x", "u(x,y)", file_name);
+        let file = save_function(res);
         function_plot(&file)
     }
 }

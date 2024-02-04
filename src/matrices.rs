@@ -171,8 +171,8 @@ pub fn system_solve(a: Matrix, left: Matrix, eps: f64) -> Matrix {
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::PI;
     use super::*;
+    use std::f64::consts::PI;
 
     #[test]
     fn matrix_raw_swap_test() {
