@@ -249,7 +249,7 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
         }
     }
 
-    fn static_1_function_function_sigma_x_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+    fn static_1_function_sigma_x_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
         let mut data = Vec::new();
         for x in x {
             let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
@@ -312,7 +312,7 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
     }
 
 
-    fn static_1_function_function_sigma_y_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+    fn static_1_function_sigma_y_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
         let mut data = Vec::new();
         for x in x {
             let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
@@ -403,7 +403,7 @@ mod run {
             eps,
         );
 
-        let res = func_calc.static_1_function_v_fixed_y(&[b / 2.0, 3.0 * b / 4.0, b]);
+        let res = func_calc.static_1_function_sigma_y_fixed_y(&[b/2.0, 3.0 * b/4.0, b]);
 
         let file = save_function(res);
         function_plot(&file)

@@ -303,7 +303,7 @@ pub fn function_sigma_x<F: LoadFuncT>(
     let d_ux = function_derivative_u_x(a, b, x, y, mu_0, g, lambda, load_function, eps);
     let d_vy = function_derivative_v_y(a, b, x, y, mu_0, g, lambda, load_function, eps);
 
-    2_f64 * g * d_ux + lambda * d_vy + lambda * d_ux
+    (2.0 * g + lambda) * d_ux + lambda * d_vy
 }
 
 pub fn function_sigma_y<F: LoadFuncT>(
