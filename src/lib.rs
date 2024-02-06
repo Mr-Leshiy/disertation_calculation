@@ -89,7 +89,7 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
         FunctionFileInfo {
             data,
             ox_name: "y".to_string(),
-            oy_name: "u_x(x,y)".to_string(),
+            oy_name: "u(x,y)".to_string(),
             file_name: format!("static_1_function_u_x"),
         }
     }
@@ -120,8 +120,8 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
         FunctionFileInfo {
             data,
             ox_name: "x".to_string(),
-            oy_name: "u_x(x,y)".to_string(),
-            file_name: format!("static_1_function_u_x"),
+            oy_name: "u(x,y)".to_string(),
+            file_name: format!("static_1_function_u_y"),
         }
     }
 
@@ -151,8 +151,8 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
         FunctionFileInfo {
             data,
             ox_name: "y".to_string(),
-            oy_name: "u_y(x,y)".to_string(),
-            file_name: format!("static_1_function_u_y"),
+            oy_name: "v(x,y)".to_string(),
+            file_name: format!("static_1_function_u_x"),
         }
     }
 
@@ -182,8 +182,195 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
         FunctionFileInfo {
             data,
             ox_name: "x".to_string(),
-            oy_name: "u_y(x,y)".to_string(),
+            oy_name: "v(x,y)".to_string(),
             file_name: format!("static_1_function_u_y"),
+        }
+    }
+
+    fn static_1_function_tau_xy_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for x in x {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
+                static_1::function_tau_xy(
+                    self.a2,
+                    self.b2,
+                    *x,
+                    y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, x = {}", self.a2, self.b2, x),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "y".to_string(),
+            oy_name: "tau_xy(x,y)".to_string(),
+            file_name: format!("static_1_function_tau_x"),
+        }
+    }
+
+    fn static_1_function_tau_xy_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for y in y {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |x| {
+                static_1::function_tau_xy(
+                    self.a2,
+                    self.b2,
+                    x,
+                    *y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, y = {}", self.a2, self.b2, y),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "x".to_string(),
+            oy_name: "tau_xy(x,y)".to_string(),
+            file_name: format!("static_1_function_tau_y"),
+        }
+    }
+
+    fn static_1_function_function_sigma_x_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for x in x {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
+                static_1::function_sigma_x(
+                    self.a2,
+                    self.b2,
+                    *x,
+                    y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, x = {}", self.a2, self.b2, x),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "y".to_string(),
+            oy_name: "sigma_x(x,y)".to_string(),
+            file_name: format!("static_1_function_sigma_x_x"),
+        }
+    }
+
+    fn static_1_function_sigma_x_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for y in y {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |x| {
+                static_1::function_sigma_x(
+                    self.a2,
+                    self.b2,
+                    x,
+                    *y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, y = {}", self.a2, self.b2, y),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "x".to_string(),
+            oy_name: "sigma_x(x,y)".to_string(),
+            file_name: format!("static_1_function_sigma_x_y"),
+        }
+    }
+
+
+    fn static_1_function_function_sigma_y_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for x in x {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |y| {
+                static_1::function_sigma_y(
+                    self.a2,
+                    self.b2,
+                    *x,
+                    y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, x = {}", self.a2, self.b2, x),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "y".to_string(),
+            oy_name: "sigma_y(x,y)".to_string(),
+            file_name: format!("static_1_function_sigma_y_x"),
+        }
+    }
+
+    fn static_1_function_sigma_y_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
+        let mut data = Vec::new();
+        for y in y {
+            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |x| {
+                static_1::function_sigma_y(
+                    self.a2,
+                    self.b2,
+                    x,
+                    *y,
+                    self.mu_0,
+                    self.g,
+                    self.lambda,
+                    &self.load_function,
+                    self.eps,
+                )
+            });
+            data.push(FunctionData {
+                x: res_x,
+                y: res_y,
+                label: format!("a = {}; b = {}, y = {}", self.a2, self.b2, y),
+            });
+        }
+
+        FunctionFileInfo {
+            data,
+            ox_name: "x".to_string(),
+            oy_name: "sigma_y(x,y)".to_string(),
+            file_name: format!("static_1_function_sigma_y_y"),
         }
     }
 }
@@ -216,7 +403,7 @@ mod run {
             eps,
         );
 
-        let res = func_calc.static_1_function_v_fixed_x(&[a / 2.0, a]);
+        let res = func_calc.static_1_function_v_fixed_y(&[b / 2.0, 3.0 * b / 4.0, b]);
 
         let file = save_function(res);
         function_plot(&file)
