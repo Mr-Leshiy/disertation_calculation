@@ -221,7 +221,7 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
     fn static_1_function_tau_xy_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
         let mut data = Vec::new();
         for y in y {
-            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |x| {
+            let (res_x, res_y) = function_calculation(self.a1, self.a2, 100, |x| {
                 static_1::function_tau_xy(
                     self.a2,
                     self.b2,
@@ -283,7 +283,7 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
     fn static_1_function_sigma_x_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
         let mut data = Vec::new();
         for y in y {
-            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |x| {
+            let (res_x, res_y) = function_calculation(self.a1, self.a2, 100, |x| {
                 static_1::function_sigma_x(
                     self.a2,
                     self.b2,
@@ -346,7 +346,7 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
     fn static_1_function_sigma_y_fixed_y(&self, y: &[f64]) -> FunctionFileInfo {
         let mut data = Vec::new();
         for y in y {
-            let (res_x, res_y) = function_calculation(self.b1, self.b2, 100, |x| {
+            let (res_x, res_y) = function_calculation(self.a1, self.a2, 100, |x| {
                 static_1::function_sigma_y(
                     self.a2,
                     self.b2,
@@ -403,7 +403,7 @@ mod run {
             eps,
         );
 
-        let res = func_calc.static_1_function_sigma_y_fixed_y(&[b/2.0, 3.0 * b/4.0, b]);
+        let res = func_calc.static_1_function_sigma_y_fixed_y(&[b]);
 
         let file = save_function(res);
         function_plot(&file)
