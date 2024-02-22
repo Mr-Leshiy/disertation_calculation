@@ -311,7 +311,6 @@ impl<Func: LoadFuncT> FunctionCalculation<Func> {
         }
     }
 
-
     fn static_1_function_sigma_y_fixed_x(&self, x: &[f64]) -> FunctionFileInfo {
         let mut data = Vec::new();
         for x in x {
@@ -383,7 +382,7 @@ mod run {
     #[test]
     fn run() {
         let b = 15.0;
-        let a = b / 2.0;
+        let a = b;
 
         // steel
         let puasson_coef = 0.25;
@@ -403,7 +402,15 @@ mod run {
             eps,
         );
 
-        let res = func_calc.static_1_function_sigma_y_fixed_y(&[b]);
+        let calc_vals = |val: f64, shift| -> Vec<f64> {
+            (0..3)
+                .into_iter()
+                .map(|i| (if shift { val / 2.0 } else { 0.0 }) + (i as f64 / 4.0) * val)
+                .collect()
+        };
+        let vals = calc_vals(b, true);
+
+        let res = func_calc.static_1_function_sigma_y_fixed_y(&vals);
 
         let file = save_function(res);
         function_plot(&file)
